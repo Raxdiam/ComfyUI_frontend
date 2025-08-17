@@ -68,7 +68,7 @@ export class Rectangle extends Float64Array {
   override subarray(
     begin: number = 0,
     end?: number
-  ): Float64Array<ArrayBuffer> {
+  ): Float64Array {
     const byteOffset = begin << 3
     const length = end === undefined ? end : end - begin
     return new Float64Array(this.buffer, byteOffset, length)

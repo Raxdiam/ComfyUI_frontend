@@ -366,15 +366,17 @@ export const MultipleFormItems: Story = {
     components: { FormItem },
     data() {
       return {
-        formData: {
-          width: 512,
-          height: 512,
-          steps: 20,
-          cfg: 7.5,
-          sampler: 'euler_a',
-          enableHires: false
-        },
-        formItems: [
+        widthValue: 512,
+        heightValue: 512,
+        stepsValue: 20,
+        cfgValue: 7.5,
+        samplerValue: 'euler_a',
+        hiresValue: false
+      }
+    },
+    computed: {
+      formItems() {
+        return [
           {
             name: 'Width',
             type: 'number',
@@ -411,12 +413,16 @@ export const MultipleFormItems: Story = {
             tooltip: 'Enable high-resolution generation'
           }
         ] as FormItemType[]
-      }
-    },
-    methods: {
-      updateField(field: string, value: any) {
-        console.log(`${field} updated:`, value)
-        ;(this.formData as any)[field] = value
+      },
+      allSettings() {
+        return {
+          width: this.widthValue,
+          height: this.heightValue,
+          steps: this.stepsValue,
+          cfg: this.cfgValue,
+          sampler: this.samplerValue,
+          enableHires: this.hiresValue
+        }
       }
     },
     template: `
@@ -431,12 +437,40 @@ export const MultipleFormItems: Story = {
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
           <div style="display: flex; flex-direction: column; gap: 16px;">
             <FormItem
-              v-for="(item, index) in formItems"
-              :key="index"
-              :item="item"
-              :formValue="formData[item.name.toLowerCase().replace(/[^a-z]/g, '')]"
-              @update:formValue="(value) => updateField(item.name.toLowerCase().replace(/[^a-z]/g, ''), value)"
-              :id="\`form-\${index}\`"
+              :item="formItems[0]"
+              :formValue="widthValue"
+              @update:formValue="(value) => widthValue = value"
+              id="form-width"
+            />
+            <FormItem
+              :item="formItems[1]"
+              :formValue="heightValue"
+              @update:formValue="(value) => heightValue = value"
+              id="form-height"
+            />
+            <FormItem
+              :item="formItems[2]"
+              :formValue="stepsValue"
+              @update:formValue="(value) => stepsValue = value"
+              id="form-steps"
+            />
+            <FormItem
+              :item="formItems[3]"
+              :formValue="cfgValue"
+              @update:formValue="(value) => cfgValue = value"
+              id="form-cfg"
+            />
+            <FormItem
+              :item="formItems[4]"
+              :formValue="samplerValue"
+              @update:formValue="(value) => samplerValue = value"
+              id="form-sampler"
+            />
+            <FormItem
+              :item="formItems[5]"
+              :formValue="hiresValue"
+              @update:formValue="(value) => hiresValue = value"
+              id="form-hires"
             />
           </div>
         </div>
@@ -444,7 +478,7 @@ export const MultipleFormItems: Story = {
         <div style="margin-top: 16px; background: rgba(0,0,0,0.05); padding: 12px; border-radius: 4px;">
           <div style="font-weight: 600; margin-bottom: 8px; font-size: 14px;">Current Settings:</div>
           <div style="font-family: monospace; font-size: 12px; color: #4b5563;">
-            {{ JSON.stringify(formData, null, 2) }}
+            {{ JSON.stringify(allSettings, null, 2) }}
           </div>
         </div>
       </div>
