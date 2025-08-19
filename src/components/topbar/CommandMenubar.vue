@@ -59,7 +59,7 @@
         @mousedown="
           isZoomCommand(item) ? handleZoomMouseDown(item, $event) : undefined
         "
-        @click="isZoomCommand(item) ? handleZoomClick($event) : undefined"
+        @click="handleItemClick(item, $event)"
       >
         <i
           v-if="hasActiveStateSiblings(item)"
@@ -177,7 +177,7 @@ const showManageExtensions = () => {
   }
 }
 
-const extraMenuItems: MenuItem[] = [
+const extraMenuItems = computed<MenuItem[]>(() => [
   { separator: true },
   {
     key: 'theme',
@@ -202,15 +202,15 @@ const extraMenuItems: MenuItem[] = [
     icon: 'mdi mdi-puzzle-outline',
     command: showManageExtensions
   }
-]
+])
 
-const lightLabel = t('menu.light')
-const darkLabel = t('menu.dark')
+const lightLabel = computed(() => t('menu.light'))
+const darkLabel = computed(() => t('menu.dark'))
 
 const activeTheme = computed(() => {
   return colorPaletteStore.completedActivePalette.light_theme
-    ? lightLabel
-    : darkLabel
+    ? lightLabel.value
+    : darkLabel.value
 })
 
 const onThemeChange = async () => {
@@ -243,7 +243,7 @@ const translatedItems = computed(() => {
   items.splice(
     helpIndex,
     0,
-    ...extraMenuItems,
+    ...extraMenuItems.value,
     ...(helpItem
       ? [
           {
@@ -285,11 +285,19 @@ const handleZoomMouseDown = (item: MenuItem, event: MouseEvent) => {
   }
 }
 
-const handleZoomClick = (event: MouseEvent) => {
-  event.preventDefault()
-  event.stopPropagation()
-  // Prevent the menu from closing for zoom commands
-  return false
+const handleItemClick = (item: MenuItem, event: MouseEvent) => {
+  // Prevent the menu from closing for zoom commands or commands that have active state
+  if (isZoomCommand(item) || item.comfyCommand?.active) {
+    event.preventDefault()
+    event.stopPropagation()
+    if (item.comfyCommand?.active) {
+      item.command?.({
+        item,
+        originalEvent: event
+      })
+    }
+    return false
+  }
 }
 
 const hasActiveStateSiblings = (item: MenuItem): boolean => {

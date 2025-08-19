@@ -728,34 +728,6 @@ export class LGraphNode
       error: this.#getErrorStrokeStyle,
       selected: this.#getSelectedStrokeStyle
     }
-
-    // Assign onMouseDown implementation
-    this.onMouseDown = (
-      // @ts-expect-error - CanvasPointerEvent type needs fixing
-      e: CanvasPointerEvent,
-      pos: Point,
-      canvas: LGraphCanvas
-    ): boolean => {
-      // Check for title button clicks (only if not collapsed)
-      if (this.title_buttons?.length && !this.flags.collapsed) {
-        // pos contains the offset from the node's position, so we need to use node-relative coordinates
-        const nodeRelativeX = pos[0]
-        const nodeRelativeY = pos[1]
-
-        for (let i = 0; i < this.title_buttons.length; i++) {
-          const button = this.title_buttons[i]
-          if (
-            button.visible &&
-            button.isPointInside(nodeRelativeX, nodeRelativeY)
-          ) {
-            this.onTitleButtonClick(button, canvas)
-            return true // Prevent default behavior
-          }
-        }
-      }
-
-      return false // Allow default behavior
-    }
   }
 
   /** Internal callback for subgraph nodes. Do not implement externally. */
@@ -1574,7 +1546,10 @@ export class LGraphNode
    * remove an existing output slot
    */
   removeOutput(slot: number): void {
-    this.disconnectOutput(slot)
+    // Only disconnect if node is part of a graph
+    if (this.graph) {
+      this.disconnectOutput(slot)
+    }
     const { outputs } = this
     outputs.splice(slot, 1)
 
@@ -1582,11 +1557,12 @@ export class LGraphNode
       const output = outputs[i]
       if (!output || !output.links) continue
 
-      for (const linkId of output.links) {
-        if (!this.graph) throw new NullGraphError()
-
-        const link = this.graph._links.get(linkId)
-        if (link) link.origin_slot--
+      // Only update link indices if node is part of a graph
+      if (this.graph) {
+        for (const linkId of output.links) {
+          const link = this.graph._links.get(linkId)
+          if (link) link.origin_slot--
+        }
       }
     }
 
@@ -1626,7 +1602,10 @@ export class LGraphNode
    * remove an existing input slot
    */
   removeInput(slot: number): void {
-    this.disconnectInput(slot, true)
+    // Only disconnect if node is part of a graph
+    if (this.graph) {
+      this.disconnectInput(slot, true)
+    }
     const { inputs } = this
     const slot_info = inputs.splice(slot, 1)
 
@@ -1634,9 +1613,11 @@ export class LGraphNode
       const input = inputs[i]
       if (!input?.link) continue
 
-      if (!this.graph) throw new NullGraphError()
-      const link = this.graph._links.get(input.link)
-      if (link) link.target_slot--
+      // Only update link indices if node is part of a graph
+      if (this.graph) {
+        const link = this.graph._links.get(input.link)
+        if (link) link.target_slot--
+      }
     }
     this.onInputRemoved?.(slot, slot_info[0])
     this.setDirtyCanvas(true, true)
