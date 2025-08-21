@@ -1079,12 +1079,6 @@ export class GraphMutationService implements IGraphMutationService {
     this.getChangeTracker()?.checkState()
   }
 
-  async dirtyCanvas(fg: boolean, bg?: boolean): Promise<void> {
-    const graph = this.getGraph()
-
-    graph.setDirtyCanvas(fg, bg)
-  }
-
   async bypassNode(nodeId: NodeId): Promise<void> {
     const graph = this.getGraph()
     const node = graph.getNodeById(nodeId)
