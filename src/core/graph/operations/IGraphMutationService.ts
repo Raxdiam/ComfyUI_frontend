@@ -9,6 +9,7 @@ export interface AddNodeParams {
   pos?: [number, number]
   properties?: Record<string, any>
   title?: string
+  id?: NodeId // Support custom ID for loading workflows
 }
 
 export interface ConnectParams {

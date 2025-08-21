@@ -84,13 +84,18 @@ export class GraphMutationService implements IGraphMutationService {
     const validation = this.validateAddNode(params)
     this.processValidation(validation)
 
-    const { type, pos, properties, title } = params
+    const { type, pos, properties, title, id } = params
     const graph = this.getGraph()
 
     const node = LiteGraph.createNode(type)
 
     if (!node) {
       throw new Error(`Failed to create node of type: ${type}`)
+    }
+
+    // Set custom ID if provided (for loading workflows)
+    if (id !== undefined) {
+      node.id = id
     }
 
     if (pos) {
