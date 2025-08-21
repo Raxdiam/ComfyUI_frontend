@@ -4,31 +4,14 @@ import BatchCountEdit from './BatchCountEdit.vue'
 
 const meta: Meta = {
   title: 'Components/Actionbar/BatchCountEdit',
-  component: BatchCountEdit as any,
+  component: BatchCountEdit,
   parameters: {
     layout: 'centered',
     docs: {
       description: {
         component:
-          'BatchCountEdit allows users to set the batch count for queue operations with smart increment/decrement logic. Features exponential scaling (doubling/halving) and integrates with the queue settings store for ComfyUI workflow execution.'
+          'BatchCountEdit allows users to set the batch count for queue operations with smart increment/decrement logic. Features exponential scaling (doubling/halving) and integrates with the queue settings store for ComfyUI workflow execution. This component uses Pinia store state and does not accept props.'
       }
-    }
-  },
-  argTypes: {
-    batchCount: {
-      control: { type: 'number', min: 1, max: 100 },
-      description: 'Current batch count value',
-      defaultValue: 1
-    },
-    minQueueCount: {
-      control: { type: 'number', min: 1, max: 10 },
-      description: 'Minimum allowed batch count',
-      defaultValue: 1
-    },
-    maxQueueCount: {
-      control: { type: 'number', min: 10, max: 1000 },
-      description: 'Maximum allowed batch count',
-      defaultValue: 100
     }
   },
   tags: ['autodocs']
@@ -38,25 +21,8 @@ export default meta
 type Story = StoryObj
 
 export const Default: Story = {
-  render: (args: any) => ({
+  render: () => ({
     components: { BatchCountEdit },
-    setup() {
-      return { args }
-    },
-    data() {
-      return {
-        count: args.batchCount || 1,
-        log: []
-      }
-    },
-    methods: {
-      logAction(action: string, value: number) {
-        this.log.unshift(
-          `${action}: ${value} (${new Date().toLocaleTimeString()})`
-        )
-        if (this.log.length > 8) this.log.pop()
-      }
-    },
     template: `
       <div style="padding: 20px;">
         <div style="margin-bottom: 16px;">
@@ -69,23 +35,17 @@ export const Default: Story = {
           <span style="font-weight: 600;">Batch Count:</span>
           <BatchCountEdit />
         </div>
-        <div v-if="log.length" style="font-size: 12px; color: #6b7280; background: rgba(0,0,0,0.05); padding: 12px; border-radius: 4px;">
-          <strong>Action Log:</strong>
-          <div v-for="(entry, index) in log" :key="index" style="margin-top: 2px;">
-            {{ entry }}
-          </div>
+        <div style="font-size: 12px; color: #6b7280; background: rgba(0,0,0,0.05); padding: 12px; border-radius: 4px;">
+          <strong>Note:</strong> Uses Pinia store state. Click +/- buttons to see exponential scaling behavior.
         </div>
       </div>
     `
   }),
-  args: {
-    batchCount: 1
-  },
   parameters: {
     docs: {
       description: {
         story:
-          'Default batch count editor with smart exponential scaling. Use +/- buttons to see the doubling/halving behavior.'
+          'Default batch count editor with smart exponential scaling. Uses Pinia store for state management. Click +/- buttons to see the doubling/halving behavior.'
       }
     }
   }

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { ref } from 'vue'
 
 import EditableText from './EditableText.vue'
 
@@ -17,16 +18,11 @@ const meta: Meta<typeof EditableText> = {
   argTypes: {
     modelValue: {
       control: 'text',
-      description: 'The text value to display and edit',
-      defaultValue: 'Editable Text'
+      description: 'The text value to display and edit'
     },
     isEditing: {
       control: 'boolean',
-      description: 'Whether the component is currently in edit mode',
-      defaultValue: false
-    },
-    onEdit: {
-      description: 'Event emitted when editing is finished with the new value'
+      description: 'Whether the component is currently in edit mode'
     }
   },
   tags: ['autodocs']
@@ -35,30 +31,45 @@ const meta: Meta<typeof EditableText> = {
 export default meta
 type Story = StoryObj<typeof EditableText>
 
-export const Default: Story = {
-  render: (args) => ({
+const createEditableStoryRender =
+  (
+    initialText = 'Click to edit this text',
+    initialEditing = false,
+    stayEditing = false
+  ) =>
+  (args: any) => ({
     components: { EditableText },
     setup() {
-      return { args }
-    },
-    data() {
-      return {
-        text: args.modelValue || 'Click to edit this text',
-        editing: args.isEditing || false
+      const text = ref(args.modelValue || initialText)
+      const editing = ref(args.isEditing ?? initialEditing)
+      const actions = ref<string[]>([])
+
+      const logAction = (action: string, data?: any) => {
+        const timestamp = new Date().toLocaleTimeString()
+        const message = data
+          ? `${action}: "${data}" (${timestamp})`
+          : `${action} (${timestamp})`
+        actions.value.unshift(message)
+        if (actions.value.length > 5) actions.value.pop()
+        console.log(action, data)
       }
-    },
-    methods: {
-      handleEdit(newValue: string) {
-        console.log('Edit completed:', newValue)
-        this.text = newValue
-        this.editing = false
-      },
-      startEdit() {
-        this.editing = true
+
+      const handleEdit = (newValue: string) => {
+        logAction('Edit completed', newValue)
+        text.value = newValue
+        editing.value = stayEditing // Stay in edit mode if specified
       }
+
+      const startEdit = () => {
+        editing.value = true
+        logAction('Edit started')
+      }
+
+      return { args, text, editing, actions, handleEdit, startEdit }
     },
     template: `
-      <div @click="startEdit" style="padding: 20px; cursor: pointer; border: 2px dashed #ccc; border-radius: 4px;">
+    <div style="padding: 20px;">
+      <div @click="startEdit" style="cursor: pointer; border: 2px dashed #ccc; border-radius: 4px; padding: 20px;">
         <div style="margin-bottom: 8px; font-size: 12px; color: #666;">Click text to edit:</div>
         <EditableText
           :modelValue="text"
@@ -66,420 +77,183 @@ export const Default: Story = {
           @edit="handleEdit"
         />
       </div>
-    `
-  }),
+      <div v-if="actions.length > 0" style="margin-top: 16px; padding: 12px; background: #f5f5f5; border-radius: 4px; font-family: monospace; font-size: 12px;">
+        <div style="font-weight: bold; margin-bottom: 8px;">Actions Log:</div>
+        <div v-for="action in actions" :key="action" style="margin: 2px 0;">{{ action }}</div>
+      </div>
+    </div>
+  `
+  })
+
+export const Default: Story = {
+  render: createEditableStoryRender(),
   args: {
     modelValue: 'Click to edit this text',
     isEditing: false
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Default editable text - click to start editing, press Enter or blur to finish.'
-      }
-    }
   }
 }
 
 export const AlwaysEditing: Story = {
-  render: (args) => ({
-    components: { EditableText },
-    setup() {
-      return { args }
-    },
-    data() {
-      return {
-        text: args.modelValue || 'Always in edit mode',
-        editing: true
-      }
-    },
-    methods: {
-      handleEdit(newValue: string) {
-        console.log('Edit completed:', newValue)
-        this.text = newValue
-        // Stay in edit mode
-        this.editing = true
-      }
-    },
-    template: `
-      <div style="padding: 20px;">
-        <div style="margin-bottom: 8px; font-size: 12px; color: #666;">Always in edit mode:</div>
-        <EditableText
-          :modelValue="text"
-          :isEditing="editing"
-          @edit="handleEdit"
-        />
-      </div>
-    `
-  }),
+  render: createEditableStoryRender('Always in edit mode', true, true),
   args: {
     modelValue: 'Always in edit mode',
     isEditing: true
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'EditableText component that stays in edit mode - useful for forms or continuous editing.'
-      }
-    }
   }
 }
 
 export const FilenameEditing: Story = {
   render: () => ({
     components: { EditableText },
-    data() {
-      return {
-        filename: 'my_workflow.json',
-        isEditing: false
+    setup() {
+      const filenames = ref([
+        'my_workflow.json',
+        'image_processing.png',
+        'model_config.yaml',
+        'final_render.mp4'
+      ])
+      const actions = ref<string[]>([])
+
+      const logAction = (action: string, filename: string, newName: string) => {
+        const timestamp = new Date().toLocaleTimeString()
+        actions.value.unshift(
+          `${action}: "${filename}" → "${newName}" (${timestamp})`
+        )
+        if (actions.value.length > 5) actions.value.pop()
+        console.log(action, { filename, newName })
       }
-    },
-    methods: {
-      handleEdit(newValue: string) {
-        console.log('Filename edited:', newValue)
-        this.filename = newValue
-        this.isEditing = false
-      },
-      startEdit() {
-        this.isEditing = true
+
+      const handleFilenameEdit = (index: number, newValue: string) => {
+        const oldName = filenames.value[index]
+        filenames.value[index] = newValue
+        logAction('Filename changed', oldName, newValue)
       }
+
+      return { filenames, actions, handleFilenameEdit }
     },
     template: `
       <div style="padding: 20px;">
-        <div style="margin-bottom: 8px; font-size: 12px; color: #666;">
-          Filename editing (automatically selects name without extension):
+        <div style="margin-bottom: 16px; font-weight: bold;">File Browser (click filenames to edit):</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div v-for="(filename, index) in filenames" :key="index" 
+               style="display: flex; align-items: center; padding: 8px; background: #f9f9f9; border-radius: 4px;">
+            <i style="margin-right: 8px; color: #666;" class="pi pi-file"></i>
+            <EditableText
+              :modelValue="filename"
+              :isEditing="false"
+              @edit="(newValue) => handleFilenameEdit(index, newValue)"
+            />
+          </div>
         </div>
-        <div 
-          @click="startEdit" 
-          style="display: inline-block; cursor: pointer; padding: 8px; background: rgba(0,0,0,0.05); border-radius: 4px;"
-        >
-          <i class="pi pi-file" style="margin-right: 8px;"></i>
-          <EditableText
-            :modelValue="filename"
-            :isEditing="isEditing"
-            @edit="handleEdit"
-          />
+        <div v-if="actions.length > 0" style="margin-top: 16px; padding: 12px; background: #f5f5f5; border-radius: 4px; font-family: monospace; font-size: 12px;">
+          <div style="font-weight: bold; margin-bottom: 8px;">Actions Log:</div>
+          <div v-for="action in actions" :key="action" style="margin: 2px 0;">{{ action }}</div>
         </div>
       </div>
     `
-  }),
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Filename editing example - automatically selects the filename without extension for easier renaming.'
-      }
-    }
-  }
+  })
 }
 
 export const LongText: Story = {
-  render: () => ({
-    components: { EditableText },
-    data() {
-      return {
-        longText:
-          'This is a very long text that demonstrates how the EditableText component handles lengthy content and text wrapping in both view and edit modes',
-        isEditing: false
-      }
-    },
-    methods: {
-      handleEdit(newValue: string) {
-        console.log('Long text edited:', newValue)
-        this.longText = newValue
-        this.isEditing = false
-      },
-      startEdit() {
-        this.isEditing = true
-      }
-    },
-    template: `
-      <div style="padding: 20px; max-width: 300px;">
-        <div style="margin-bottom: 8px; font-size: 12px; color: #666;">Long text handling:</div>
-        <div 
-          @click="startEdit" 
-          style="cursor: pointer; padding: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; word-wrap: break-word;"
-        >
-          <EditableText
-            :modelValue="longText"
-            :isEditing="isEditing"
-            @edit="handleEdit"
-          />
-        </div>
-      </div>
-    `
-  }),
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Long text example showing how the component handles text wrapping and lengthy content.'
-      }
-    }
+  render: createEditableStoryRender(
+    'This is a much longer text that demonstrates how the EditableText component handles longer content with multiple words and potentially line wrapping scenarios.'
+  ),
+  args: {
+    modelValue:
+      'This is a much longer text that demonstrates how the EditableText component handles longer content.',
+    isEditing: false
   }
 }
 
-export const ComfyUIWorkflowName: Story = {
-  render: () => ({
-    components: { EditableText },
-    data() {
-      return {
-        workflowName: 'SDXL Portrait Generation',
-        isEditing: false
-      }
-    },
-    methods: {
-      handleEdit(newValue: string) {
-        console.log('Workflow name edited:', newValue)
-        this.workflowName = newValue
-        this.isEditing = false
-      },
-      startEdit() {
-        this.isEditing = true
-      }
-    },
-    template: `
-      <div style="padding: 20px;">
-        <div style="margin-bottom: 8px; font-size: 12px; color: #666;">ComfyUI workflow name editing:</div>
-        <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(0,0,0,0.05); border-radius: 6px;">
-          <i class="pi pi-sitemap" style="color: #6366f1;"></i>
-          <div style="flex-grow: 1;">
-            <div 
-              @click="startEdit" 
-              style="cursor: pointer; font-weight: 600; color: #1f2937;"
-            >
-              <EditableText
-                :modelValue="workflowName"
-                :isEditing="isEditing"
-                @edit="handleEdit"
-              />
-            </div>
-            <div style="font-size: 12px; color: #6b7280; margin-top: 2px;">
-              Click to rename workflow
-            </div>
-          </div>
-          <button @click="startEdit" style="padding: 4px 8px; background: none; border: 1px solid #d1d5db; border-radius: 4px; cursor: pointer;">
-            <i class="pi pi-pencil" style="font-size: 12px;"></i>
-          </button>
-        </div>
-      </div>
-    `
-  }),
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'ComfyUI workflow name editing example with realistic UI styling.'
-      }
-    }
+export const EmptyState: Story = {
+  render: createEditableStoryRender(''),
+  args: {
+    modelValue: '',
+    isEditing: false
   }
 }
 
-export const NodeTitleEditing: Story = {
+export const SingleCharacter: Story = {
+  render: createEditableStoryRender('A'),
+  args: {
+    modelValue: 'A',
+    isEditing: false
+  }
+}
+
+// ComfyUI usage examples
+export const WorkflowNaming: Story = {
   render: () => ({
     components: { EditableText },
-    data() {
-      return {
-        nodeTitle: 'KSampler',
-        isEditing: false
+    setup() {
+      const workflows = ref([
+        'Portrait Enhancement',
+        'Landscape Generation',
+        'Style Transfer Workflow',
+        'Untitled Workflow'
+      ])
+
+      const handleWorkflowRename = (index: number, newName: string) => {
+        workflows.value[index] = newName
+        console.log('Workflow renamed:', { index, newName })
       }
-    },
-    methods: {
-      handleEdit(newValue: string) {
-        console.log('Node title edited:', newValue)
-        this.nodeTitle = newValue
-        this.isEditing = false
-      },
-      startEdit() {
-        this.isEditing = true
-      }
+
+      return { workflows, handleWorkflowRename }
     },
     template: `
-      <div style="padding: 20px;">
-        <div style="margin-bottom: 8px; font-size: 12px; color: #666;">ComfyUI node title editing:</div>
-        <div style="width: 200px; background: #2d3748; color: white; border-radius: 4px; padding: 8px;">
-          <div 
-            @click="startEdit"
-            style="cursor: pointer; font-weight: bold; font-size: 14px; margin-bottom: 4px;"
-          >
+      <div style="padding: 20px; width: 300px;">
+        <div style="margin-bottom: 16px; font-weight: bold;">Workflow Library</div>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div v-for="(workflow, index) in workflows" :key="index" 
+               style="padding: 12px; border: 1px solid #ddd; border-radius: 6px; background: white;">
             <EditableText
-              :modelValue="nodeTitle"
-              :isEditing="isEditing"
-              @edit="handleEdit"
+              :modelValue="workflow"
+              :isEditing="false"
+              @edit="(newName) => handleWorkflowRename(index, newName)"
+              style="font-size: 14px; font-weight: 500;"
             />
-          </div>
-          <div style="font-size: 11px; color: #a0aec0;">sampling</div>
-          <!-- Mock node inputs/outputs -->
-          <div style="margin-top: 8px; font-size: 11px;">
-            <div>• model</div>
-            <div>• positive</div>
-            <div>• negative</div>
-            <div>• latent_image</div>
+            <div style="margin-top: 4px; font-size: 11px; color: #666;">
+              Last modified: 2 hours ago
+            </div>
           </div>
         </div>
       </div>
     `
-  }),
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'ComfyUI node title editing example within a realistic node interface.'
-      }
-    }
-  }
+  })
 }
 
-export const MultipleInstances: Story = {
+export const ModelRenaming: Story = {
   render: () => ({
     components: { EditableText },
-    data() {
-      return {
-        items: [
-          { id: 1, name: 'Item One', editing: false },
-          { id: 2, name: 'Item Two', editing: false },
-          { id: 3, name: 'Item Three', editing: false }
-        ]
+    setup() {
+      const models = ref([
+        'stable-diffusion-v1-5.safetensors',
+        'controlnet_depth.pth',
+        'vae-ft-mse-840000-ema.ckpt'
+      ])
+
+      const handleModelRename = (index: number, newName: string) => {
+        models.value[index] = newName
+        console.log('Model renamed:', { index, newName })
       }
-    },
-    methods: {
-      handleEdit(id: number, newValue: string) {
-        console.log(`Item ${id} edited:`, newValue)
-        const item = this.items.find((i: any) => i.id === id)
-        if (item) {
-          item.name = newValue
-          item.editing = false
-        }
-      },
-      startEdit(id: number) {
-        this.items.forEach((item: any) => {
-          item.editing = item.id === id
-        })
-      }
+
+      return { models, handleModelRename }
     },
     template: `
-      <div style="padding: 20px;">
-        <div style="margin-bottom: 12px; font-size: 12px; color: #666;">Multiple editable text instances:</div>
-        <div v-for="item in items" :key="item.id" style="margin-bottom: 8px;">
-          <div 
-            @click="startEdit(item.id)"
-            style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; cursor: pointer;"
-          >
-            <span style="font-weight: 600; color: #6b7280; min-width: 20px;">{{ item.id }}.</span>
+      <div style="padding: 20px; width: 350px;">
+        <div style="margin-bottom: 16px; font-weight: bold;">Model Manager</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div v-for="(model, index) in models" :key="index" 
+               style="display: flex; align-items: center; padding: 8px; background: #f8f8f8; border-radius: 4px;">
+            <i style="margin-right: 8px; color: #4a90e2;" class="pi pi-box"></i>
             <EditableText
-              :modelValue="item.name"
-              :isEditing="item.editing"
-              @edit="(value) => handleEdit(item.id, value)"
+              :modelValue="model"
+              :isEditing="false"
+              @edit="(newName) => handleModelRename(index, newName)"
+              style="flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 12px;"
             />
           </div>
         </div>
       </div>
     `
-  }),
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Multiple EditableText instances in a list - demonstrates isolated editing states.'
-      }
-    }
-  }
-}
-
-export const KeyboardInteraction: Story = {
-  render: () => ({
-    components: { EditableText },
-    data() {
-      return {
-        text: 'Press Enter to save, Escape to cancel',
-        isEditing: true,
-        log: []
-      }
-    },
-    methods: {
-      handleEdit(newValue: string) {
-        this.log.push(`Edited: "${newValue}"`)
-        this.text = newValue
-        this.isEditing = false
-        setTimeout(() => {
-          this.isEditing = true
-        }, 1000)
-      }
-    },
-    template: `
-      <div style="padding: 20px;">
-        <div style="margin-bottom: 12px; font-size: 12px; color: #666;">
-          Keyboard interaction demo (auto-restarts editing):
-        </div>
-        <EditableText
-          :modelValue="text"
-          :isEditing="isEditing"
-          @edit="handleEdit"
-        />
-        <div style="margin-top: 16px; font-size: 12px; color: #6b7280;">
-          <strong>Log:</strong>
-          <div v-for="(entry, index) in log" :key="index" style="margin-top: 2px;">
-            {{ entry }}
-          </div>
-        </div>
-      </div>
-    `
-  }),
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Keyboard interaction demo - shows editing behavior with automatic restart for testing.'
-      }
-    }
-  }
-}
-
-export const EmptyText: Story = {
-  render: () => ({
-    components: { EditableText },
-    data() {
-      return {
-        text: '',
-        isEditing: false
-      }
-    },
-    methods: {
-      handleEdit(newValue: string) {
-        console.log('Empty text edited:', newValue)
-        this.text = newValue
-        this.isEditing = false
-      },
-      startEdit() {
-        this.isEditing = true
-      }
-    },
-    template: `
-      <div style="padding: 20px;">
-        <div style="margin-bottom: 8px; font-size: 12px; color: #666;">Empty text handling:</div>
-        <div 
-          @click="startEdit" 
-          style="cursor: pointer; padding: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; min-height: 20px; min-width: 100px;"
-        >
-          <EditableText
-            :modelValue="text"
-            :isEditing="isEditing"
-            @edit="handleEdit"
-          />
-          <span v-if="!text && !isEditing" style="color: #9ca3af; font-style: italic;">
-            Click to add text
-          </span>
-        </div>
-      </div>
-    `
-  }),
-  parameters: {
-    docs: {
-      description: {
-        story: 'Empty text handling with placeholder text when no value is set.'
-      }
-    }
-  }
+  })
 }

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { ref } from 'vue'
 
 import RefreshButton from './RefreshButton.vue'
 
@@ -17,27 +18,20 @@ const meta: Meta<typeof RefreshButton> = {
   argTypes: {
     modelValue: {
       control: 'boolean',
-      description: 'Active/loading state of the button (v-model)',
-      defaultValue: false
+      description: 'Active/loading state of the button (v-model)'
     },
     disabled: {
       control: 'boolean',
-      description: 'Whether the button is disabled',
-      defaultValue: false
+      description: 'Whether the button is disabled'
     },
     outlined: {
       control: 'boolean',
-      description: 'Whether to use outlined button style',
-      defaultValue: true
+      description: 'Whether to use outlined button style'
     },
     severity: {
       control: 'select',
       options: ['secondary', 'success', 'info', 'warn', 'help', 'danger'],
-      description: 'PrimeVue severity level for button styling',
-      defaultValue: 'secondary'
-    },
-    onRefresh: {
-      description: 'Event emitted when button is clicked'
+      description: 'PrimeVue severity level for button styling'
     }
   },
   tags: ['autodocs']
@@ -46,373 +40,128 @@ const meta: Meta<typeof RefreshButton> = {
 export default meta
 type Story = StoryObj<typeof RefreshButton>
 
-export const Default: Story = {
-  render: (args) => ({
+const createStoryRender =
+  (initialState = false, asyncDuration = 2000) =>
+  (args: any) => ({
     components: { RefreshButton },
     setup() {
-      return { args }
-    },
-    data() {
-      return {
-        isActive: args.modelValue || false
+      const isActive = ref(args.modelValue ?? initialState)
+      const actions = ref<string[]>([])
+
+      const logAction = (action: string) => {
+        const timestamp = new Date().toLocaleTimeString()
+        actions.value.unshift(`${action} (${timestamp})`)
+        if (actions.value.length > 5) actions.value.pop()
+        console.log(action)
       }
-    },
-    methods: {
-      handleRefresh() {
-        console.log('Refresh clicked')
-        this.isActive = true
-        // Simulate async operation
-        setTimeout(() => {
-          this.isActive = false
-        }, 2000)
+
+      const handleRefresh = async () => {
+        logAction('Refresh started')
+        isActive.value = true
+        await new Promise((resolve) => setTimeout(resolve, asyncDuration))
+        isActive.value = false
+        logAction('Refresh completed')
       }
+
+      return { args, isActive, actions, handleRefresh }
     },
     template: `
+    <div style="padding: 20px;">
       <RefreshButton
         v-model="isActive"
-        :disabled="args.disabled"
-        :outlined="args.outlined"
-        :severity="args.severity"
+        v-bind="args"
         @refresh="handleRefresh"
       />
-    `
-  }),
+      <div v-if="actions.length > 0" style="margin-top: 16px; padding: 12px; background: #f5f5f5; border-radius: 4px; font-family: monospace; font-size: 12px;">
+        <div style="font-weight: bold; margin-bottom: 8px;">Actions Log:</div>
+        <div v-for="action in actions" :key="action" style="margin: 2px 0;">{{ action }}</div>
+      </div>
+    </div>
+  `
+  })
+
+export const Default: Story = {
+  render: createStoryRender(),
   args: {
     modelValue: false,
     disabled: false,
     outlined: true,
     severity: 'secondary'
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Default refresh button - click to see loading animation for 2 seconds.'
-      }
-    }
   }
 }
 
 export const Active: Story = {
-  render: (args) => ({
-    components: { RefreshButton },
-    setup() {
-      return { args }
-    },
-    data() {
-      return {
-        isActive: true
-      }
-    },
-    methods: {
-      handleRefresh() {
-        console.log('Refresh clicked')
-      }
-    },
-    template: `
-      <RefreshButton
-        v-model="isActive"
-        :disabled="args.disabled"
-        :outlined="args.outlined"
-        :severity="args.severity"
-        @refresh="handleRefresh"
-      />
-    `
-  }),
+  render: createStoryRender(true),
   args: {
     disabled: false,
     outlined: true,
     severity: 'secondary'
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Refresh button in active/loading state showing progress spinner.'
-      }
-    }
   }
 }
 
 export const Disabled: Story = {
-  render: (args) => ({
-    components: { RefreshButton },
-    setup() {
-      return { args }
-    },
-    data() {
-      return {
-        isActive: false
-      }
-    },
-    methods: {
-      handleRefresh() {
-        console.log('Refresh clicked')
-      }
-    },
-    template: `
-      <RefreshButton
-        v-model="isActive"
-        :disabled="args.disabled"
-        :outlined="args.outlined"
-        :severity="args.severity"
-        @refresh="handleRefresh"
-      />
-    `
-  }),
+  render: createStoryRender(),
   args: {
     disabled: true,
     outlined: true,
     severity: 'secondary'
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: 'Disabled refresh button that cannot be clicked.'
-      }
-    }
   }
 }
 
 export const Filled: Story = {
-  render: (args) => ({
-    components: { RefreshButton },
-    setup() {
-      return { args }
-    },
-    data() {
-      return {
-        isActive: false
-      }
-    },
-    methods: {
-      handleRefresh() {
-        console.log('Refresh clicked')
-        this.isActive = true
-        setTimeout(() => {
-          this.isActive = false
-        }, 2000)
-      }
-    },
-    template: `
-      <RefreshButton
-        v-model="isActive"
-        :disabled="args.disabled"
-        :outlined="args.outlined"
-        :severity="args.severity"
-        @refresh="handleRefresh"
-      />
-    `
-  }),
+  render: createStoryRender(),
   args: {
     disabled: false,
     outlined: false,
     severity: 'secondary'
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: 'Filled (non-outlined) refresh button style.'
-      }
-    }
   }
 }
 
 export const SuccessSeverity: Story = {
-  render: (args) => ({
-    components: { RefreshButton },
-    setup() {
-      return { args }
-    },
-    data() {
-      return {
-        isActive: false
-      }
-    },
-    methods: {
-      handleRefresh() {
-        console.log('Refresh clicked')
-        this.isActive = true
-        setTimeout(() => {
-          this.isActive = false
-        }, 2000)
-      }
-    },
-    template: `
-      <RefreshButton
-        v-model="isActive"
-        :disabled="args.disabled"
-        :outlined="args.outlined"
-        :severity="args.severity"
-        @refresh="handleRefresh"
-      />
-    `
-  }),
+  render: createStoryRender(),
   args: {
     disabled: false,
     outlined: true,
     severity: 'success'
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: 'Refresh button with success severity (green color).'
-      }
-    }
   }
 }
 
 export const DangerSeverity: Story = {
-  render: (args) => ({
-    components: { RefreshButton },
-    setup() {
-      return { args }
-    },
-    data() {
-      return {
-        isActive: false
-      }
-    },
-    methods: {
-      handleRefresh() {
-        console.log('Refresh clicked')
-        this.isActive = true
-        setTimeout(() => {
-          this.isActive = false
-        }, 2000)
-      }
-    },
-    template: `
-      <RefreshButton
-        v-model="isActive"
-        :disabled="args.disabled"
-        :outlined="args.outlined"
-        :severity="args.severity"
-        @refresh="handleRefresh"
-      />
-    `
-  }),
+  render: createStoryRender(),
   args: {
     disabled: false,
     outlined: true,
     severity: 'danger'
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Refresh button with danger severity (red color) for critical refresh actions.'
-      }
-    }
   }
 }
 
-// ComfyUI use case examples
-export const WorkflowRefresh: Story = {
-  render: () => ({
-    components: { RefreshButton },
-    data() {
-      return {
-        isRefreshing: false
-      }
-    },
-    methods: {
-      refreshWorkflows() {
-        console.log('Refreshing workflows...')
-        this.isRefreshing = true
-        setTimeout(() => {
-          this.isRefreshing = false
-          console.log('Workflows refreshed!')
-        }, 3000)
-      }
-    },
-    template: `
-      <div style="display: flex; align-items: center; gap: 12px; padding: 20px;">
-        <span>Workflows:</span>
-        <RefreshButton
-          v-model="isRefreshing"
-          @refresh="refreshWorkflows"
-        />
-      </div>
-    `
-  }),
-  parameters: {
-    docs: {
-      description: {
-        story: 'Example usage for refreshing workflows in ComfyUI interface.'
-      }
-    }
-  }
-}
-
-export const ModelListRefresh: Story = {
-  render: () => ({
-    components: { RefreshButton },
-    data() {
-      return {
-        isRefreshing: false
-      }
-    },
-    methods: {
-      refreshModels() {
-        console.log('Refreshing model list...')
-        this.isRefreshing = true
-        setTimeout(() => {
-          this.isRefreshing = false
-          console.log('Models refreshed!')
-        }, 2500)
-      }
-    },
-    template: `
-      <div style="display: flex; align-items: center; gap: 12px; padding: 20px;">
-        <span>Model List:</span>
-        <RefreshButton
-          v-model="isRefreshing"
-          severity="info"
-          @refresh="refreshModels"
-        />
-      </div>
-    `
-  }),
-  parameters: {
-    docs: {
-      description: {
-        story: 'Example usage for refreshing model list with info severity.'
-      }
-    }
-  }
-}
-
-// Gallery showing all severities
+// Simplified gallery showing all severities
 export const SeverityGallery: Story = {
   render: () => ({
     components: { RefreshButton },
-    data() {
-      return {
-        states: {
-          secondary: false,
-          success: false,
-          info: false,
-          warn: false,
-          help: false,
-          danger: false
-        }
-      }
-    },
-    methods: {
-      refresh(severity: string) {
+    setup() {
+      const severities = [
+        'secondary',
+        'success',
+        'info',
+        'warn',
+        'help',
+        'danger'
+      ]
+      const states = ref(Object.fromEntries(severities.map((s) => [s, false])))
+
+      const refresh = async (severity: string) => {
         console.log(`Refreshing with ${severity} severity`)
-        ;(this.states as any)[severity] = true
-        setTimeout(() => {
-          ;(this.states as any)[severity] = false
-        }, 2000)
+        states.value[severity] = true
+        await new Promise((resolve) => setTimeout(resolve, 2000))
+        states.value[severity] = false
       }
+
+      return { severities, states, refresh }
     },
     template: `
       <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding: 20px;">
-        <div v-for="severity in ['secondary', 'success', 'info', 'warn', 'help', 'danger']" 
-             :key="severity" 
-             style="text-align: center;">
+        <div v-for="severity in severities" :key="severity" style="text-align: center;">
           <RefreshButton
             v-model="states[severity]"
             :severity="severity"
@@ -424,64 +173,31 @@ export const SeverityGallery: Story = {
         </div>
       </div>
     `
-  }),
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Gallery showing all available severity levels with their colors.'
-      }
-    }
-  }
+  })
 }
 
-export const StateComparison: Story = {
+// ComfyUI usage examples
+export const WorkflowRefresh: Story = {
   render: () => ({
     components: { RefreshButton },
-    data() {
-      return {
-        activeState: true,
-        inactiveState: false,
-        disabledState: false
+    setup() {
+      const isRefreshing = ref(false)
+
+      const refreshWorkflows = async () => {
+        console.log('Refreshing workflows...')
+        isRefreshing.value = true
+        await new Promise((resolve) => setTimeout(resolve, 3000))
+        isRefreshing.value = false
+        console.log('Workflows refreshed!')
       }
-    },
-    methods: {
-      refresh(type: string) {
-        console.log(`${type} refresh clicked`)
-      }
+
+      return { isRefreshing, refreshWorkflows }
     },
     template: `
-      <div style="display: flex; align-items: center; gap: 20px; padding: 20px;">
-        <div style="text-align: center;">
-          <RefreshButton
-            v-model="inactiveState"
-            @refresh="refresh('inactive')"
-          />
-          <div style="margin-top: 8px; font-size: 12px; color: #666;">Inactive</div>
-        </div>
-        <div style="text-align: center;">
-          <RefreshButton
-            v-model="activeState"
-            @refresh="refresh('active')"
-          />
-          <div style="margin-top: 8px; font-size: 12px; color: #666;">Active</div>
-        </div>
-        <div style="text-align: center;">
-          <RefreshButton
-            v-model="disabledState"
-            :disabled="true"
-            @refresh="refresh('disabled')"
-          />
-          <div style="margin-top: 8px; font-size: 12px; color: #666;">Disabled</div>
-        </div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 20px;">
+        <span>Workflows:</span>
+        <RefreshButton v-model="isRefreshing" @refresh="refreshWorkflows" />
       </div>
     `
-  }),
-  parameters: {
-    docs: {
-      description: {
-        story: 'Side-by-side comparison of different button states.'
-      }
-    }
-  }
+  })
 }
