@@ -1,4 +1,5 @@
 import { GroupId } from '@/lib/litegraph/src/LGraphGroup'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LinkId } from '@/lib/litegraph/src/LLink'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import { SubgraphId } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -78,6 +79,7 @@ export interface IGraphMutationService {
   // Node operations
   addNode(params: AddNodeParams): Promise<NodeId>
   removeNode(nodeId: NodeId): Promise<void>
+  getNodeById(nodeId: NodeId): LGraphNode
   updateNodeProperty(
     nodeId: NodeId,
     property: string,

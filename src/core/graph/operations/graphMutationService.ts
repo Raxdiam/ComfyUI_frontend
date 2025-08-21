@@ -123,6 +123,17 @@ export class GraphMutationService implements IGraphMutationService {
     return addedNode.id as NodeId
   }
 
+  getNodeById(nodeId: NodeId): LGraphNode {
+    const graph = this.getGraph()
+    const node = graph.getNodeById(nodeId)
+
+    if (!node) {
+      throw new Error(`Node with id ${nodeId} not found`)
+    }
+
+    return node
+  }
+
   async removeNode(nodeId: NodeId): Promise<void> {
     const validation = this.validateRemoveNode(nodeId)
     this.processValidation(validation)
