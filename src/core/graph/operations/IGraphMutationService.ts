@@ -153,6 +153,7 @@ export interface IGraphMutationService {
   removeSubgraphOutput(subgraphId: SubgraphId, index: number): Promise<void>
 
   clearGraph(): Promise<void>
+  dirtyCanvas(fg: boolean, bg?: boolean): Promise<void>
 
   bypassNode(nodeId: NodeId): Promise<void>
   unbypassNode(nodeId: NodeId): Promise<void>
