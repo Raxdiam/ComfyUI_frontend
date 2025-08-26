@@ -35,7 +35,7 @@ jobs:
     - name: Copy ComfyUI_devtools from frontend repo
       run: |
         mkdir -p ComfyUI/custom_nodes/ComfyUI_devtools
-        cp -r ComfyUI_frontend/src/devtools/* ComfyUI/custom_nodes/ComfyUI_devtools/
+        cp -r ComfyUI_frontend/tools/devtools/* ComfyUI/custom_nodes/ComfyUI_devtools/
     - name: Checkout custom node repository
       uses: actions/checkout@v4
       with:

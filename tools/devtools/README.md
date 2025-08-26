@@ -20,7 +20,7 @@ These tools provide:
 During CI/CD, these files are automatically copied to the ComfyUI `custom_nodes` directory. For local development, copy these files to your ComfyUI installation:
 
 ```bash
-cp -r src/devtools/* /path/to/your/ComfyUI/custom_nodes/ComfyUI_devtools/
+cp -r tools/devtools/* /path/to/your/ComfyUI/custom_nodes/ComfyUI_devtools/
 ```
 
 ## Migration
