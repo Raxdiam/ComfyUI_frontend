@@ -272,6 +272,7 @@
     "category": "カテゴリ",
     "choose_file_to_upload": "アップロードするファイルを選択",
     "clear": "クリア",
+    "clearAll": "すべてクリア",
     "clearFilters": "フィルターをクリア",
     "close": "閉じる",
     "color": "色",
@@ -312,7 +313,6 @@
     "feedback": "フィードバック",
     "filter": "フィルタ",
     "findIssues": "問題を見つける",
-    "firstTimeUIMessage": "新しいUIを初めて使用しています。「メニュー > 新しいメニューを使用 > 無効」を選択することで古いUIに戻すことが可能です。",
     "frontendNewer": "フロントエンドのバージョン {frontendVersion} はバックエンドのバージョン {backendVersion} と互換性がない可能性があります。",
     "frontendOutdated": "フロントエンドのバージョン {frontendVersion} は古くなっています。バックエンドは {requiredVersion} 以上が必要です。",
     "goToNode": "ノードに移動",
@@ -327,6 +327,8 @@
     "installed": "インストール済み",
     "installing": "インストール中",
     "interrupted": "中断されました",
+    "itemSelected": "{selectedCount}件選択済み",
+    "itemsSelected": "{selectedCount}件選択済み",
     "keybinding": "キーバインディング",
     "keybindingAlreadyExists": "このキー割り当てはすでに存在します",
     "learnMore": "詳細を学ぶ",
@@ -407,12 +409,17 @@
   },
   "graphCanvasMenu": {
     "fitView": "ビューに合わせる",
+    "focusMode": "フォーカスモード",
+    "hand": "手のひら",
+    "hideLinks": "リンクを非表示",
     "panMode": "パンモード",
     "resetView": "ビューをリセット",
+    "select": "選択",
     "selectMode": "選択モード",
-    "toggleLinkVisibility": "リンクの表示切り替え",
+    "showLinks": "リンクを表示",
     "toggleMinimap": "ミニマップの切り替え",
     "zoomIn": "拡大",
+    "zoomOptions": "ズームオプション",
     "zoomOut": "縮小"
   },
   "groupNode": {
@@ -798,6 +805,7 @@
     "Increase Brush Size in MaskEditor": "マスクエディタでブラシサイズを大きくする",
     "Interrupt": "中断",
     "Load Default Workflow": "デフォルトワークフローを読み込む",
+    "Lock Canvas": "キャンバスをロック",
     "Manage group nodes": "グループノードを管理",
     "Manager": "マネージャー",
     "Minimap": "ミニマップ",
@@ -852,6 +860,7 @@
     "Toggle the Custom Nodes Manager Progress Bar": "カスタムノードマネージャーの進行状況バーを切り替え",
     "Undo": "元に戻す",
     "Ungroup selected group nodes": "選択したグループノードのグループ解除",
+    "Unlock Canvas": "キャンバスのロックを解除",
     "Unpack the selected Subgraph": "選択したサブグラフを展開",
     "Workflows": "ワークフロー",
     "Zoom In": "ズームイン",
@@ -1691,5 +1700,11 @@
     "enterFilename": "ファイル名を入力",
     "exportWorkflow": "ワークフローをエクスポート",
     "saveWorkflow": "ワークフローを保存"
+  },
+  "zoomControls": {
+    "hideMinimap": "ミニマップを非表示",
+    "label": "ズームコントロール",
+    "showMinimap": "ミニマップを表示",
+    "zoomToFit": "全体表示にズーム"
   }
 }
