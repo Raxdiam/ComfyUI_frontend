@@ -10,7 +10,23 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          'BatchCountEdit allows users to set the batch count for queue operations with smart increment/decrement logic. Features exponential scaling (doubling/halving) and integrates with the queue settings store for ComfyUI workflow execution. This component uses Pinia store state and does not accept props.'
+          'BatchCountEdit allows users to set the batch count for queue operations with smart increment/decrement logic. Features exponential scaling (doubling/halving) and integrates with the queue settings store for ComfyUI workflow execution. This component can accept props for controlled mode or use Pinia store state by default.'
+      }
+    }
+  },
+  argTypes: {
+    minQueueCount: {
+      control: 'number',
+      description: 'Minimum allowed batch count',
+      table: {
+        defaultValue: { summary: '1' }
+      }
+    },
+    maxQueueCount: {
+      control: 'number',
+      description: 'Maximum allowed batch count',
+      table: {
+        defaultValue: { summary: '100' }
       }
     }
   },
@@ -21,8 +37,20 @@ export default meta
 type Story = StoryObj
 
 export const Default: Story = {
-  render: () => ({
+  args: {
+    minQueueCount: 1,
+    maxQueueCount: 100
+  },
+  render: (_args) => ({
     components: { BatchCountEdit },
+    data() {
+      return {
+        count: 1,
+        logAction: (action: string, value: number) => {
+          console.log(`${action}: ${value}`)
+        }
+      }
+    },
     template: `
       <div style="padding: 20px;">
         <div style="margin-bottom: 16px;">
@@ -33,10 +61,15 @@ export const Default: Story = {
         </div>
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
           <span style="font-weight: 600;">Batch Count:</span>
-          <BatchCountEdit />
+          <BatchCountEdit
+            v-model:batch-count="count"
+            :min-queue-count="+_args.minQueueCount"
+            :max-queue-count="+_args.maxQueueCount"
+            @update:batch-count="(v) => logAction('Set', Number(v))"
+          />
         </div>
         <div style="font-size: 12px; color: #6b7280; background: rgba(0,0,0,0.05); padding: 12px; border-radius: 4px;">
-          <strong>Note:</strong> Uses Pinia store state. Click +/- buttons to see exponential scaling behavior.
+          <strong>Note:</strong> Current value: {{count}}. Check console for action logs.
         </div>
       </div>
     `
@@ -52,15 +85,32 @@ export const Default: Story = {
 }
 
 export const WithTooltip: Story = {
-  render: () => ({
+  args: {
+    minQueueCount: 1,
+    maxQueueCount: 50
+  },
+  render: (_args) => ({
     components: { BatchCountEdit },
+    data() {
+      return {
+        count: 4,
+        logAction: (action: string, value: number) => {
+          console.log(`${action}: ${value}`)
+        }
+      }
+    },
     template: `
       <div style="padding: 40px;">
         <div style="margin-bottom: 16px; text-align: center;">
           <div style="font-size: 14px; color: #6b7280; margin-bottom: 8px;">
             Hover over the input to see tooltip
           </div>
-          <BatchCountEdit />
+          <BatchCountEdit
+            v-model:batch-count="count"
+            :min-queue-count="+_args.minQueueCount"
+            :max-queue-count="+_args.maxQueueCount"
+            @update:batch-count="(v) => logAction('Set', Number(v))"
+          />
         </div>
         <div style="font-size: 12px; color: #6b7280; text-align: center; margin-top: 20px;">
           ⬆️ Tooltip appears on hover with 600ms delay
@@ -79,11 +129,18 @@ export const WithTooltip: Story = {
 }
 
 export const HighBatchCount: Story = {
-  render: () => ({
+  args: {
+    minQueueCount: 1,
+    maxQueueCount: 200
+  },
+  render: (_args) => ({
     components: { BatchCountEdit },
     data() {
       return {
-        mockBatchCount: 16
+        count: 16,
+        logAction: (action: string, value: number) => {
+          console.log(`${action}: ${value}`)
+        }
       }
     },
     template: `
@@ -94,7 +151,12 @@ export const HighBatchCount: Story = {
           </div>
           <div style="display: flex; align-items: center; gap: 12px;">
             <span style="font-weight: 600;">Batch Count:</span>
-            <BatchCountEdit />
+            <BatchCountEdit
+              v-model:batch-count="count"
+              :min-queue-count="+_args.minQueueCount"
+              :max-queue-count="+_args.maxQueueCount"
+              @update:batch-count="(v) => logAction('Set', Number(v))"
+            />
           </div>
         </div>
         <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 4px; padding: 12px;">
@@ -120,8 +182,20 @@ export const HighBatchCount: Story = {
 }
 
 export const ActionBarContext: Story = {
-  render: () => ({
+  args: {
+    minQueueCount: 1,
+    maxQueueCount: 100
+  },
+  render: (_args) => ({
     components: { BatchCountEdit },
+    data() {
+      return {
+        count: 2,
+        logAction: (action: string, value: number) => {
+          console.log(`${action}: ${value}`)
+        }
+      }
+    },
     template: `
       <div style="padding: 20px;">
         <div style="margin-bottom: 16px; font-size: 14px; color: #6b7280;">
@@ -137,7 +211,12 @@ export const ActionBarContext: Story = {
           <!-- BatchCountEdit -->
           <div style="display: flex; align-items: center; gap: 8px;">
             <label style="font-size: 12px; color: #6b7280; font-weight: 600;">BATCH:</label>
-            <BatchCountEdit />
+            <BatchCountEdit
+              v-model:batch-count="count"
+              :min-queue-count="+_args.minQueueCount"
+              :max-queue-count="+_args.maxQueueCount"
+              @update:batch-count="(v) => logAction('Set', Number(v))"
+            />
           </div>
           
           <!-- Mock Clear Button -->
@@ -165,12 +244,20 @@ export const ActionBarContext: Story = {
 }
 
 export const ExponentialScaling: Story = {
-  render: () => ({
+  args: {
+    minQueueCount: 1,
+    maxQueueCount: 100
+  },
+  render: (_args) => ({
     components: { BatchCountEdit },
     data() {
       return {
         scalingLog: [],
-        currentValue: 1
+        currentValue: 1,
+        count: 1,
+        logAction: (action: string, value: number) => {
+          console.log(`${action}: ${value}`)
+        }
       }
     },
     methods: {
@@ -207,7 +294,12 @@ export const ExponentialScaling: Story = {
             <span style="font-weight: 600;">Current Value:</span>
             <span style="font-size: 18px; font-weight: bold; color: #3b82f6;">{{ currentValue }}</span>
           </div>
-          <BatchCountEdit />
+          <BatchCountEdit
+            v-model:batch-count="count"
+            :min-queue-count="+_args.minQueueCount"
+            :max-queue-count="+_args.maxQueueCount"
+            @update:batch-count="(v) => logAction('Set', Number(v))"
+          />
         </div>
         
         <div style="display: flex; gap: 8px; margin-bottom: 16px;">
@@ -242,13 +334,21 @@ export const ExponentialScaling: Story = {
 }
 
 export const QueueWorkflowContext: Story = {
-  render: () => ({
+  args: {
+    minQueueCount: 1,
+    maxQueueCount: 50
+  },
+  render: (_args) => ({
     components: { BatchCountEdit },
     data() {
       return {
         queueStatus: 'Ready',
         totalGenerations: 1,
-        estimatedTime: '~2 min'
+        estimatedTime: '~2 min',
+        count: 1,
+        logAction: (action: string, value: number) => {
+          console.log(`${action}: ${value}`)
+        }
       }
     },
     computed: {
@@ -302,7 +402,12 @@ export const QueueWorkflowContext: Story = {
               
               <div style="display: flex; align-items: center; gap: 8px;">
                 <label style="font-size: 12px; color: #6b7280; font-weight: 600;">BATCH:</label>
-                <BatchCountEdit @update:batch-count="updateEstimate" />
+                <BatchCountEdit
+                  v-model:batch-count="count"
+                  :min-queue-count="+_args.minQueueCount"
+                  :max-queue-count="+_args.maxQueueCount"
+                  @update:batch-count="(v) => logAction('Set', Number(v))"
+                />
               </div>
             </div>
             
@@ -326,10 +431,18 @@ export const QueueWorkflowContext: Story = {
 }
 
 export const LimitConstraints: Story = {
-  render: () => ({
+  args: {
+    minQueueCount: 1,
+    maxQueueCount: 200
+  },
+  render: (_args) => ({
     components: { BatchCountEdit },
     data() {
       return {
+        count: 1,
+        logAction: (action: string, value: number) => {
+          console.log(`${action}: ${value}`)
+        },
         scenarios: [
           {
             name: 'Conservative (max 10)',
@@ -364,7 +477,12 @@ export const LimitConstraints: Story = {
             <div style="font-size: 12px; color: #6b7280; margin-bottom: 12px;">{{ scenario.description }}</div>
             <div style="display: flex; align-items: center; gap: 8px;">
               <span style="font-size: 12px; font-weight: 600;">BATCH:</span>
-              <BatchCountEdit />
+              <BatchCountEdit
+                v-model:batch-count="count"
+                :min-queue-count="+_args.minQueueCount"
+                :max-queue-count="+_args.maxQueueCount"
+                @update:batch-count="(v) => logAction('Set', Number(v))"
+              />
             </div>
             <div style="font-size: 11px; color: #9ca3af; margin-top: 8px;">
               Max limit: {{ scenario.maxLimit }}
@@ -385,8 +503,20 @@ export const LimitConstraints: Story = {
 }
 
 export const MinimalInline: Story = {
-  render: () => ({
+  args: {
+    minQueueCount: 1,
+    maxQueueCount: 20
+  },
+  render: (_args) => ({
     components: { BatchCountEdit },
+    data() {
+      return {
+        count: 3,
+        logAction: (action: string, value: number) => {
+          console.log(`${action}: ${value}`)
+        }
+      }
+    },
     template: `
       <div style="padding: 20px;">
         <div style="margin-bottom: 16px; font-size: 14px; color: #6b7280;">
@@ -394,7 +524,12 @@ export const MinimalInline: Story = {
         </div>
         <div style="display: flex; align-items: center; gap: 8px; font-size: 14px;">
           <span>Run</span>
-          <BatchCountEdit />
+          <BatchCountEdit
+            v-model:batch-count="count"
+            :min-queue-count="+_args.minQueueCount"
+            :max-queue-count="+_args.maxQueueCount"
+            @update:batch-count="(v) => logAction('Set', Number(v))"
+          />
           <span>times</span>
         </div>
       </div>
