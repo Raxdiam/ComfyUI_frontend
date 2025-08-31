@@ -357,16 +357,48 @@ export class CanvasPointer {
    * Updates the device mode based on event patterns.
    */
   #updateDeviceMode(event: WheelEvent, now: number): void {
-    if (this.#isTrackpadPattern(event)) {
-      this.detectedDevice = 'trackpad'
-    } else if (this.#isMousePattern(event)) {
-      this.detectedDevice = 'mouse'
-    } else if (
+    console.log('event.deltaX:', event.deltaX)
+    console.log('event.deltaY:', event.deltaY)
+
+    const wheelDelta = (event as any).wheelDelta
+    console.log('wheelDelta: ', wheelDelta)
+
+    if (wheelDelta !== undefined) {
+      const absWheelDelta = Math.abs(wheelDelta)
+
+      // get this wheelDelta from real word testing, in general, mouse wheelDelta is larger than 30 to 120, trackpad is about less than 25
+      if (absWheelDelta > 25) {
+        if (this.#isTrackpadPattern(event)) {
+          console.log(
+            'Detected device: trackpad (wheelDelta check and isTrackpadPattern)'
+          )
+          this.detectedDevice = 'trackpad'
+        } else {
+          console.log(
+            'Detected device: mouse (wheelDelta check and not isTrackpadPattern)'
+          )
+          this.detectedDevice = 'mouse'
+        }
+      } else if (absWheelDelta > 0) {
+        this.detectedDevice = 'trackpad'
+        console.log('Detected device: trackpad (wheelDelta check)')
+      }
+    } else {
+      if (this.#isTrackpadPattern(event)) {
+        this.detectedDevice = 'trackpad'
+      } else if (this.#isMousePattern(event)) {
+        this.detectedDevice = 'mouse'
+      }
+    }
+
+    if (
       this.detectedDevice === 'trackpad' &&
       this.#shouldBufferLinuxEvent(event)
     ) {
       this.#bufferLinuxEvent(event, now)
     }
+
+    console.log('Detected device:', this.detectedDevice)
   }
 
   /**
@@ -400,6 +432,7 @@ export class CanvasPointer {
    * @param event The wheel event to check
    */
   #isMousePattern(event: WheelEvent): boolean {
+    console.log('Mouse pattern check:', event.deltaX, event.deltaY)
     const absoluteDeltaY = Math.abs(event.deltaY)
 
     // Primary threshold for switching from trackpad to mouse
