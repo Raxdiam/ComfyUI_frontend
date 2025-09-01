@@ -33,8 +33,8 @@ export const getIconButtonSizeClasses = (
 ) => {
   const sizeClasses = {
     'fit-content': 'w-auto h-auto',
-    sm: 'w-6 h-6 text-xs !rounded-md',
-    md: 'w-8 h-8 text-sm'
+    sm: 'w-8 h-8 text-xs !rounded-md',
+    md: 'w-10 h-10 text-sm'
   }
   return sizeClasses[size]
 }
