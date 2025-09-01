@@ -360,14 +360,16 @@ export class CanvasPointer {
     console.log('event.deltaX:', event.deltaX)
     console.log('event.deltaY:', event.deltaY)
 
-    const wheelDelta = (event as any).wheelDelta
-    console.log('wheelDelta: ', wheelDelta)
+    const wheelDeltaY = (event as any).wheelDeltaY
+    console.log('wheelDeltaY: ', wheelDeltaY)
 
-    if (wheelDelta !== undefined) {
-      const absWheelDelta = Math.abs(wheelDelta)
+    if (Math.abs(event.deltaX) !== 0) {
+      this.detectedDevice = 'trackpad'
+    } else if (wheelDeltaY !== undefined) {
+      const absWheelDeltaY = Math.abs(wheelDeltaY)
 
       // get this wheelDelta from real word testing, in general, mouse wheelDelta is larger than 30 to 120, trackpad is about less than 25
-      if (absWheelDelta > 25) {
+      if (absWheelDeltaY > 25) {
         if (this.#isTrackpadPattern(event)) {
           console.log(
             'Detected device: trackpad (wheelDelta check and isTrackpadPattern)'
@@ -379,7 +381,7 @@ export class CanvasPointer {
           )
           this.detectedDevice = 'mouse'
         }
-      } else if (absWheelDelta > 0) {
+      } else if (absWheelDeltaY > 0) {
         this.detectedDevice = 'trackpad'
         console.log('Detected device: trackpad (wheelDelta check)')
       }
