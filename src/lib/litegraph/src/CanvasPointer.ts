@@ -426,6 +426,14 @@ export class CanvasPointer {
     // Pinch-to-zoom: ctrlKey with small deltaY
     if (event.ctrlKey && Math.abs(event.deltaY) < 10) return true
 
+    // Two-finger panning vertically: zero deltaX AND small deltaY, only check this on non-Mac
+    if (
+      !navigator.platform.includes('Mac') &&
+      event.deltaX === 0 &&
+      Math.abs(event.deltaY) < 30
+    )
+      return true
+
     return false
   }
 
