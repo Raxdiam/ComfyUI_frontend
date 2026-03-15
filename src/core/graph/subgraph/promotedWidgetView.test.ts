@@ -816,6 +816,160 @@ describe('SubgraphNode.widgets getter', () => {
     ])
   })
 
+  test('widgets getter preserves stored order for linked promotions', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'widgetA', type: '*' },
+        { name: 'widgetB', type: '*' }
+      ]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 129 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const linkedNodeA = new LGraphNode('LinkedNodeA')
+    const linkedInputA = linkedNodeA.addInput('widgetA', '*')
+    linkedNodeA.addWidget('text', 'widgetA', 'a', () => {})
+    linkedInputA.widget = { name: 'widgetA' }
+    subgraph.add(linkedNodeA)
+
+    const linkedNodeB = new LGraphNode('LinkedNodeB')
+    const linkedInputB = linkedNodeB.addInput('widgetB', '*')
+    linkedNodeB.addWidget('text', 'widgetB', 'b', () => {})
+    linkedInputB.widget = { name: 'widgetB' }
+    subgraph.add(linkedNodeB)
+
+    subgraph.inputNode.slots[0].connect(linkedInputA, linkedNodeA)
+    subgraph.inputNode.slots[1].connect(linkedInputB, linkedNodeB)
+
+    setPromotions(subgraphNode, [
+      [String(linkedNodeB.id), 'widgetB'],
+      [String(linkedNodeA.id), 'widgetA']
+    ])
+
+    const widgets = promotedWidgets(subgraphNode)
+    expect(widgets.map((widget) => widget.sourceNodeId)).toStrictEqual([
+      String(linkedNodeB.id),
+      String(linkedNodeA.id)
+    ])
+    expect(widgets.map((widget) => widget.name)).toStrictEqual([
+      'widgetB',
+      'widgetA'
+    ])
+  })
+
+  test('widgets getter preserves stored order when linked and independent promotions are interleaved', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'widgetA', type: '*' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 130 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const linkedNode = new LGraphNode('LinkedNode')
+    const linkedInput = linkedNode.addInput('widgetA', '*')
+    linkedNode.addWidget('text', 'widgetA', 'a', () => {})
+    linkedInput.widget = { name: 'widgetA' }
+    subgraph.add(linkedNode)
+
+    const independentNode = new LGraphNode('IndependentNode')
+    independentNode.addWidget('text', 'widgetB', 'b', () => {})
+    subgraph.add(independentNode)
+
+    subgraph.inputNode.slots[0].connect(linkedInput, linkedNode)
+
+    setPromotions(subgraphNode, [
+      [String(independentNode.id), 'widgetB'],
+      [String(linkedNode.id), 'widgetA']
+    ])
+
+    const widgets = promotedWidgets(subgraphNode)
+    expect(
+      widgets.map((widget) => [widget.sourceNodeId, widget.sourceWidgetName])
+    ).toStrictEqual([
+      [String(independentNode.id), 'widgetB'],
+      [String(linkedNode.id), 'widgetA']
+    ])
+  })
+
+  test('syncPromotions preserves stored order for linked promotions', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'widgetA', type: '*' },
+        { name: 'widgetB', type: '*' }
+      ]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 131 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const linkedNodeA = new LGraphNode('LinkedNodeA')
+    const linkedInputA = linkedNodeA.addInput('widgetA', '*')
+    linkedNodeA.addWidget('text', 'widgetA', 'a', () => {})
+    linkedInputA.widget = { name: 'widgetA' }
+    subgraph.add(linkedNodeA)
+
+    const linkedNodeB = new LGraphNode('LinkedNodeB')
+    const linkedInputB = linkedNodeB.addInput('widgetB', '*')
+    linkedNodeB.addWidget('text', 'widgetB', 'b', () => {})
+    linkedInputB.widget = { name: 'widgetB' }
+    subgraph.add(linkedNodeB)
+
+    subgraph.inputNode.slots[0].connect(linkedInputA, linkedNodeA)
+    subgraph.inputNode.slots[1].connect(linkedInputB, linkedNodeB)
+
+    setPromotions(subgraphNode, [
+      [String(linkedNodeB.id), 'widgetB'],
+      [String(linkedNodeA.id), 'widgetA']
+    ])
+
+    callSyncPromotions(subgraphNode)
+
+    expect(
+      usePromotionStore().getPromotions(
+        subgraphNode.rootGraph.id,
+        subgraphNode.id
+      )
+    ).toStrictEqual([
+      { interiorNodeId: String(linkedNodeB.id), widgetName: 'widgetB' },
+      { interiorNodeId: String(linkedNodeA.id), widgetName: 'widgetA' }
+    ])
+  })
+
+  test('syncPromotions preserves stored order when linked and independent promotions are interleaved', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'widgetA', type: '*' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 132 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const linkedNode = new LGraphNode('LinkedNode')
+    const linkedInput = linkedNode.addInput('widgetA', '*')
+    linkedNode.addWidget('text', 'widgetA', 'a', () => {})
+    linkedInput.widget = { name: 'widgetA' }
+    subgraph.add(linkedNode)
+
+    const independentNode = new LGraphNode('IndependentNode')
+    independentNode.addWidget('text', 'widgetB', 'b', () => {})
+    subgraph.add(independentNode)
+
+    subgraph.inputNode.slots[0].connect(linkedInput, linkedNode)
+
+    setPromotions(subgraphNode, [
+      [String(independentNode.id), 'widgetB'],
+      [String(linkedNode.id), 'widgetA']
+    ])
+
+    callSyncPromotions(subgraphNode)
+
+    expect(
+      usePromotionStore().getPromotions(
+        subgraphNode.rootGraph.id,
+        subgraphNode.id
+      )
+    ).toStrictEqual([
+      { interiorNodeId: String(independentNode.id), widgetName: 'widgetB' },
+      { interiorNodeId: String(linkedNode.id), widgetName: 'widgetA' }
+    ])
+  })
+
   test('input-added existing-input path tolerates missing link metadata', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'widgetA', type: '*' }]

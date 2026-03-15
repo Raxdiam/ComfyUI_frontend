@@ -81,6 +81,7 @@ const activeWidgets = computed<WidgetItem[]>({
         widgetName: getWidgetName(w)
       }))
     )
+    refreshActiveNodeOrder(node)
   }
 })
 
@@ -143,6 +144,13 @@ function toKey(item: WidgetItem) {
 function nodeWidgets(n: LGraphNode): WidgetItem[] {
   return getPromotableWidgets(n).map((w) => [n, w])
 }
+function refreshActiveNodeOrder(node: SubgraphNode) {
+  node.setDirtyCanvas(true, true)
+}
+function refreshActiveNodeLayout(node: SubgraphNode) {
+  node.setSize(node.computeSize())
+  node.setDirtyCanvas(true, true)
+}
 function demote([node, widget]: WidgetItem) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
@@ -153,6 +161,7 @@ function demote([node, widget]: WidgetItem) {
     String(node.id),
     getWidgetName(widget)
   )
+  refreshActiveNodeLayout(subgraphNode)
 }
 function promote([node, widget]: WidgetItem) {
   const subgraphNode = activeNode.value
@@ -164,6 +173,7 @@ function promote([node, widget]: WidgetItem) {
     String(node.id),
     widget.name
   )
+  refreshActiveNodeLayout(subgraphNode)
 }
 function showAll() {
   const node = activeNode.value
@@ -171,6 +181,7 @@ function showAll() {
   for (const [n, w] of filteredCandidates.value) {
     promotionStore.promote(node.rootGraph.id, node.id, String(n.id), w.name)
   }
+  refreshActiveNodeLayout(node)
 }
 function hideAll() {
   const node = activeNode.value
@@ -184,6 +195,7 @@ function hideAll() {
       getWidgetName(w)
     )
   }
+  refreshActiveNodeLayout(node)
 }
 function showRecommended() {
   const node = activeNode.value
@@ -191,6 +203,7 @@ function showRecommended() {
   for (const [n, w] of recommendedWidgets.value) {
     promotionStore.promote(node.rootGraph.id, node.id, String(n.id), w.name)
   }
+  refreshActiveNodeLayout(node)
 }
 
 onMounted(() => {
