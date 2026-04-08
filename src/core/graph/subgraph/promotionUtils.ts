@@ -68,7 +68,7 @@ function toPromotionSource(
 
 function refreshPromotedWidgetRendering(parents: SubgraphNode[]): void {
   for (const parent of parents) {
-    parent.computeSize(parent.size)
+    parent.expandToFitContent()
     parent.setDirtyCanvas(true, true)
   }
   useCanvasStore().canvas?.setDirty(true, true)
@@ -312,7 +312,7 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
       toPromotionSource(n, w)
     )
   }
-  subgraphNode.computeSize(subgraphNode.size)
+  subgraphNode.expandToFitContent()
 }
 
 export function pruneDisconnected(subgraphNode: SubgraphNode) {

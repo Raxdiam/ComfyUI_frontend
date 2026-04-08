@@ -97,7 +97,7 @@ const activeWidgets = computed<WidgetItem[]>({
           : undefined
       }))
     )
-    refreshPromotedWidgetRendering()
+    refreshPromotedWidgetOrder()
   }
 })
 
@@ -155,11 +155,10 @@ const filteredActive = computed<WidgetItem[]>(() => {
   )
 })
 
-function refreshPromotedWidgetRendering() {
+function refreshPromotedWidgetOrder() {
   const node = activeNode.value
   if (!node) return
 
-  node.computeSize(node.size)
   node.setDirtyCanvas(true, true)
   canvasStore.canvas?.setDirty(true, true)
 }

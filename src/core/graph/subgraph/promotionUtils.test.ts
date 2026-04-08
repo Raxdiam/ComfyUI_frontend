@@ -167,6 +167,25 @@ describe('pruneDisconnected', () => {
       }
     ])
   })
+
+  it('preserves the current node size when pruneDisconnected runs without changes', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('TestNode')
+    subgraphNode.subgraph.add(interiorNode)
+    interiorNode.addWidget('text', 'kept', 'value', () => {})
+
+    const store = usePromotionStore()
+    store.setPromotions(subgraphNode.rootGraph.id, subgraphNode.id, [
+      { sourceNodeId: String(interiorNode.id), sourceWidgetName: 'kept' }
+    ])
+
+    subgraphNode.size = [420, 280]
+
+    pruneDisconnected(subgraphNode)
+
+    expect(subgraphNode.size).toStrictEqual([420, 280])
+  })
 })
 
 describe('getPromotableWidgets', () => {

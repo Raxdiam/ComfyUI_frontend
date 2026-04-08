@@ -755,7 +755,7 @@ describe('SubgraphNode.widgets getter', () => {
     ])
   })
 
-  test('full linked coverage prunes promotions referencing non-existent nodes', () => {
+  test('full linked coverage does not prune unresolved independent fallback promotions', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'widgetA', type: '*' }]
     })
@@ -780,9 +780,163 @@ describe('SubgraphNode.widgets getter', () => {
       subgraphNode.rootGraph.id,
       subgraphNode.id
     )
-    // Node 9999 does not exist in the subgraph, so its entry is pruned
     expect(promotions).toStrictEqual([
-      { sourceNodeId: String(liveNode.id), sourceWidgetName: 'widgetA' }
+      { sourceNodeId: String(liveNode.id), sourceWidgetName: 'widgetA' },
+      { sourceNodeId: '9999', sourceWidgetName: 'widgetA' }
+    ])
+  })
+
+  test('widgets getter preserves stored order for linked promotions', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'widgetA', type: '*' },
+        { name: 'widgetB', type: '*' }
+      ]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 129 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const linkedNodeA = new LGraphNode('LinkedNodeA')
+    const linkedInputA = linkedNodeA.addInput('widgetA', '*')
+    linkedNodeA.addWidget('text', 'widgetA', 'a', () => {})
+    linkedInputA.widget = { name: 'widgetA' }
+    subgraph.add(linkedNodeA)
+
+    const linkedNodeB = new LGraphNode('LinkedNodeB')
+    const linkedInputB = linkedNodeB.addInput('widgetB', '*')
+    linkedNodeB.addWidget('text', 'widgetB', 'b', () => {})
+    linkedInputB.widget = { name: 'widgetB' }
+    subgraph.add(linkedNodeB)
+
+    subgraph.inputNode.slots[0].connect(linkedInputA, linkedNodeA)
+    subgraph.inputNode.slots[1].connect(linkedInputB, linkedNodeB)
+
+    setPromotions(subgraphNode, [
+      [String(linkedNodeB.id), 'widgetB'],
+      [String(linkedNodeA.id), 'widgetA']
+    ])
+
+    const widgets = promotedWidgets(subgraphNode)
+    expect(widgets.map((widget) => widget.sourceNodeId)).toStrictEqual([
+      String(linkedNodeB.id),
+      String(linkedNodeA.id)
+    ])
+    expect(widgets.map((widget) => widget.sourceWidgetName)).toStrictEqual([
+      'widgetB',
+      'widgetA'
+    ])
+  })
+
+  test('widgets getter preserves stored order when linked and independent promotions are interleaved', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'widgetA', type: '*' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 130 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const linkedNode = new LGraphNode('LinkedNode')
+    const linkedInput = linkedNode.addInput('widgetA', '*')
+    linkedNode.addWidget('text', 'widgetA', 'a', () => {})
+    linkedInput.widget = { name: 'widgetA' }
+    subgraph.add(linkedNode)
+
+    const independentNode = new LGraphNode('IndependentNode')
+    independentNode.addWidget('text', 'widgetB', 'b', () => {})
+    subgraph.add(independentNode)
+
+    subgraph.inputNode.slots[0].connect(linkedInput, linkedNode)
+
+    setPromotions(subgraphNode, [
+      [String(independentNode.id), 'widgetB'],
+      [String(linkedNode.id), 'widgetA']
+    ])
+
+    const widgets = promotedWidgets(subgraphNode)
+    expect(
+      widgets.map((widget) => [widget.sourceNodeId, widget.sourceWidgetName])
+    ).toStrictEqual([
+      [String(independentNode.id), 'widgetB'],
+      [String(linkedNode.id), 'widgetA']
+    ])
+  })
+
+  test('syncPromotions preserves stored order for linked promotions', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'widgetA', type: '*' },
+        { name: 'widgetB', type: '*' }
+      ]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 131 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const linkedNodeA = new LGraphNode('LinkedNodeA')
+    const linkedInputA = linkedNodeA.addInput('widgetA', '*')
+    linkedNodeA.addWidget('text', 'widgetA', 'a', () => {})
+    linkedInputA.widget = { name: 'widgetA' }
+    subgraph.add(linkedNodeA)
+
+    const linkedNodeB = new LGraphNode('LinkedNodeB')
+    const linkedInputB = linkedNodeB.addInput('widgetB', '*')
+    linkedNodeB.addWidget('text', 'widgetB', 'b', () => {})
+    linkedInputB.widget = { name: 'widgetB' }
+    subgraph.add(linkedNodeB)
+
+    subgraph.inputNode.slots[0].connect(linkedInputA, linkedNodeA)
+    subgraph.inputNode.slots[1].connect(linkedInputB, linkedNodeB)
+
+    setPromotions(subgraphNode, [
+      [String(linkedNodeB.id), 'widgetB'],
+      [String(linkedNodeA.id), 'widgetA']
+    ])
+
+    callSyncPromotions(subgraphNode)
+
+    expect(
+      usePromotionStore().getPromotions(
+        subgraphNode.rootGraph.id,
+        subgraphNode.id
+      )
+    ).toStrictEqual([
+      { sourceNodeId: String(linkedNodeB.id), sourceWidgetName: 'widgetB' },
+      { sourceNodeId: String(linkedNodeA.id), sourceWidgetName: 'widgetA' }
+    ])
+  })
+
+  test('syncPromotions preserves stored order when linked and independent promotions are interleaved', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'widgetA', type: '*' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 132 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const linkedNode = new LGraphNode('LinkedNode')
+    const linkedInput = linkedNode.addInput('widgetA', '*')
+    linkedNode.addWidget('text', 'widgetA', 'a', () => {})
+    linkedInput.widget = { name: 'widgetA' }
+    subgraph.add(linkedNode)
+
+    const independentNode = new LGraphNode('IndependentNode')
+    independentNode.addWidget('text', 'widgetB', 'b', () => {})
+    subgraph.add(independentNode)
+
+    subgraph.inputNode.slots[0].connect(linkedInput, linkedNode)
+
+    setPromotions(subgraphNode, [
+      [String(independentNode.id), 'widgetB'],
+      [String(linkedNode.id), 'widgetA']
+    ])
+
+    callSyncPromotions(subgraphNode)
+
+    expect(
+      usePromotionStore().getPromotions(
+        subgraphNode.rootGraph.id,
+        subgraphNode.id
+      )
+    ).toStrictEqual([
+      { sourceNodeId: String(independentNode.id), sourceWidgetName: 'widgetB' },
+      { sourceNodeId: String(linkedNode.id), sourceWidgetName: 'widgetA' }
     ])
   })
 
