@@ -91,7 +91,7 @@ function handleHideInput() {
         disambiguatingSourceNodeId: widget.disambiguatingSourceNodeId
       }
       promotionStore.demote(parent.rootGraph.id, parent.id, source)
-      parent.computeSize(parent.size)
+      parent.expandToFitContent()
     }
     canvasStore.canvas?.setDirty(true, true)
   } else {

@@ -67,6 +67,11 @@ type LinkedPromotionEntry = PromotedWidgetSource & {
   /** The subgraph input slot's internal name (stable identity). */
   slotName: string
 }
+
+type ReconcileEntry = PromotedWidgetSource & {
+  viewKey?: string
+  slotName?: string
+}
 // Pre-rasterize the SVG to a bitmap canvas to avoid Firefox re-processing
 // the SVG's internal stylesheet on every ctx.drawImage() call per frame.
 const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
@@ -334,40 +339,49 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     linkedEntries: LinkedPromotionEntry[]
   ): {
     displayNameByViewKey: Map<string, string>
-    reconcileEntries: Array<{
-      sourceNodeId: string
-      sourceWidgetName: string
-      viewKey?: string
-      disambiguatingSourceNodeId?: string
-      slotName?: string
-    }>
+    reconcileEntries: ReconcileEntry[]
   } {
-    const { fallbackStoredEntries } = this._collectLinkedAndFallbackEntries(
+    const orderedLinkedEntries = this._orderLinkedEntriesByStoredOrder(
       entries,
       linkedEntries
     )
+    const linkedPromotionEntries =
+      this._toPromotionEntries(orderedLinkedEntries)
+    const fallbackStoredEntries = this._collectFallbackStoredEntries(
+      entries,
+      linkedPromotionEntries
+    )
+    const { overlappingFallbackEntries, reorderableFallbackEntries } =
+      this._partitionFallbackStoredEntries(
+        orderedLinkedEntries,
+        fallbackStoredEntries
+      )
     const linkedReconcileEntries =
-      this._buildLinkedReconcileEntries(linkedEntries)
+      this._buildLinkedReconcileEntries(orderedLinkedEntries)
+    const fallbackReconcileEntries = reorderableFallbackEntries.map((entry) =>
+      this._toReconcileEntry(entry)
+    )
+    const overlappingFallbackReconcileEntries = overlappingFallbackEntries.map(
+      (entry) => this._toReconcileEntry(entry)
+    )
     const shouldPersistLinkedOnly = this._shouldPersistLinkedOnly(
       linkedEntries,
       fallbackStoredEntries
     )
-    const fallbackReconcileEntries = fallbackStoredEntries.map((e) =>
-      e.disambiguatingSourceNodeId
-        ? {
-            sourceNodeId: e.sourceNodeId,
-            sourceWidgetName: e.sourceWidgetName,
-            disambiguatingSourceNodeId: e.disambiguatingSourceNodeId,
-            viewKey: `src:${e.sourceNodeId}:${e.sourceWidgetName}:${e.disambiguatingSourceNodeId}`
-          }
-        : e
-    )
     const reconcileEntries = shouldPersistLinkedOnly
       ? linkedReconcileEntries
-      : [...linkedReconcileEntries, ...fallbackReconcileEntries]
+      : [
+          ...this._mergeEntriesByStoredOrder(
+            entries,
+            linkedReconcileEntries,
+            fallbackReconcileEntries
+          ),
+          ...overlappingFallbackReconcileEntries
+        ]
 
     return {
-      displayNameByViewKey: this._buildDisplayNameByViewKey(linkedEntries),
+      displayNameByViewKey:
+        this._buildDisplayNameByViewKey(orderedLinkedEntries),
       reconcileEntries
     }
   }
@@ -378,8 +392,21 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   ): {
     mergedEntries: PromotedWidgetSource[]
   } {
-    const { linkedPromotionEntries, fallbackStoredEntries } =
-      this._collectLinkedAndFallbackEntries(entries, linkedEntries)
+    const orderedLinkedEntries = this._orderLinkedEntriesByStoredOrder(
+      entries,
+      linkedEntries
+    )
+    const linkedPromotionEntries =
+      this._toPromotionEntries(orderedLinkedEntries)
+    const fallbackStoredEntries = this._collectFallbackStoredEntries(
+      entries,
+      linkedPromotionEntries
+    )
+    const { overlappingFallbackEntries, reorderableFallbackEntries } =
+      this._partitionFallbackStoredEntries(
+        orderedLinkedEntries,
+        fallbackStoredEntries
+      )
     const shouldPersistLinkedOnly = this._shouldPersistLinkedOnly(
       linkedEntries,
       fallbackStoredEntries
@@ -388,18 +415,32 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return {
       mergedEntries: shouldPersistLinkedOnly
         ? linkedPromotionEntries
-        : [...linkedPromotionEntries, ...fallbackStoredEntries]
+        : [
+            ...this._mergeEntriesByStoredOrder(
+              entries,
+              linkedPromotionEntries,
+              reorderableFallbackEntries
+            ),
+            ...overlappingFallbackEntries
+          ]
     }
   }
 
-  private _collectLinkedAndFallbackEntries(
+  private _toReconcileEntry(entry: PromotedWidgetSource): ReconcileEntry {
+    if (!entry.disambiguatingSourceNodeId) return { ...entry }
+
+    return {
+      sourceNodeId: entry.sourceNodeId,
+      sourceWidgetName: entry.sourceWidgetName,
+      disambiguatingSourceNodeId: entry.disambiguatingSourceNodeId,
+      viewKey: `src:${entry.sourceNodeId}:${entry.sourceWidgetName}:${entry.disambiguatingSourceNodeId}`
+    }
+  }
+
+  private _collectFallbackStoredEntries(
     entries: PromotedWidgetSource[],
-    linkedEntries: LinkedPromotionEntry[]
-  ): {
     linkedPromotionEntries: PromotedWidgetSource[]
-    fallbackStoredEntries: PromotedWidgetSource[]
-  } {
-    const linkedPromotionEntries = this._toPromotionEntries(linkedEntries)
+  ): PromotedWidgetSource[] {
     const excludedEntryKeys = new Set(
       linkedPromotionEntries.map((entry) =>
         this._makePromotionEntryKey(
@@ -423,10 +464,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       linkedPromotionEntries
     )
 
-    return {
-      linkedPromotionEntries,
-      fallbackStoredEntries
-    }
+    return fallbackStoredEntries
   }
 
   private _shouldPersistLinkedOnly(
@@ -440,7 +478,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     const linkedEntryKeys = new Set(
       linkedEntries.map((entry) =>
-        this._makePromotionEntryKey(entry.sourceNodeId, entry.sourceWidgetName)
+        this._makePromotionEntryKey(
+          entry.sourceNodeId,
+          entry.sourceWidgetName,
+          entry.disambiguatingSourceNodeId
+        )
       )
     )
 
@@ -461,7 +503,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       // If the fallback entry overlaps a linked entry, keep it
       // until aliasing can be positively proven.
       return linkedEntryKeys.has(
-        this._makePromotionEntryKey(entry.sourceNodeId, entry.sourceWidgetName)
+        this._makePromotionEntryKey(
+          entry.sourceNodeId,
+          entry.sourceWidgetName,
+          entry.disambiguatingSourceNodeId
+        )
       )
     })
 
@@ -516,8 +562,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const prunedEntries: PromotedWidgetSource[] = []
 
     for (const entry of fallbackStoredEntries) {
-      if (!this.subgraph.getNodeById(entry.sourceNodeId)) continue
-
       const concreteKey = this._resolveConcretePromotionEntryKey(entry)
       if (concreteKey && linkedConcreteKeys.has(concreteKey)) continue
 
@@ -565,15 +609,156 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return connectedEntryKeys
   }
 
+  private _orderLinkedEntriesByStoredOrder(
+    entries: PromotedWidgetSource[],
+    linkedEntries: LinkedPromotionEntry[]
+  ): LinkedPromotionEntry[] {
+    if (entries.length === 0 || linkedEntries.length < 2) return linkedEntries
+
+    const linkedEntriesByKey = new Map<string, LinkedPromotionEntry[]>()
+    for (const entry of linkedEntries) {
+      const key = this._makePromotionEntryKey(
+        entry.sourceNodeId,
+        entry.sourceWidgetName,
+        entry.disambiguatingSourceNodeId
+      )
+      const matchingEntries = linkedEntriesByKey.get(key)
+      if (matchingEntries) {
+        matchingEntries.push(entry)
+      } else {
+        linkedEntriesByKey.set(key, [entry])
+      }
+    }
+
+    const matchedEntries = new Set<LinkedPromotionEntry>()
+    const orderedLinkedEntries: LinkedPromotionEntry[] = []
+
+    for (const entry of entries) {
+      const key = this._makePromotionEntryKey(
+        entry.sourceNodeId,
+        entry.sourceWidgetName,
+        entry.disambiguatingSourceNodeId
+      )
+      const match = linkedEntriesByKey.get(key)?.shift()
+      if (!match) continue
+
+      matchedEntries.add(match)
+      orderedLinkedEntries.push(match)
+    }
+
+    if (orderedLinkedEntries.length === 0) return linkedEntries
+
+    return [
+      ...orderedLinkedEntries,
+      ...linkedEntries.filter((entry) => !matchedEntries.has(entry))
+    ]
+  }
+
+  private _mergeEntriesByStoredOrder<TEntry extends PromotedWidgetSource>(
+    storedEntries: PromotedWidgetSource[],
+    primaryEntries: TEntry[],
+    secondaryEntries: TEntry[]
+  ): TEntry[] {
+    if (storedEntries.length === 0)
+      return [...primaryEntries, ...secondaryEntries]
+
+    const primaryEntriesByKey = new Map<string, TEntry[]>()
+    for (const entry of primaryEntries) {
+      const key = this._makePromotionEntryKey(
+        entry.sourceNodeId,
+        entry.sourceWidgetName,
+        entry.disambiguatingSourceNodeId
+      )
+      const matchingEntries = primaryEntriesByKey.get(key)
+      if (matchingEntries) {
+        matchingEntries.push(entry)
+      } else {
+        primaryEntriesByKey.set(key, [entry])
+      }
+    }
+
+    const secondaryEntriesByKey = new Map<string, TEntry[]>()
+    for (const entry of secondaryEntries) {
+      const key = this._makePromotionEntryKey(
+        entry.sourceNodeId,
+        entry.sourceWidgetName,
+        entry.disambiguatingSourceNodeId
+      )
+      const matchingEntries = secondaryEntriesByKey.get(key)
+      if (matchingEntries) {
+        matchingEntries.push(entry)
+      } else {
+        secondaryEntriesByKey.set(key, [entry])
+      }
+    }
+
+    const matchedEntries = new Set<TEntry>()
+    const orderedEntries: TEntry[] = []
+
+    for (const entry of storedEntries) {
+      const key = this._makePromotionEntryKey(
+        entry.sourceNodeId,
+        entry.sourceWidgetName,
+        entry.disambiguatingSourceNodeId
+      )
+      const primaryMatch = primaryEntriesByKey.get(key)?.shift()
+      if (primaryMatch) {
+        matchedEntries.add(primaryMatch)
+        orderedEntries.push(primaryMatch)
+        continue
+      }
+
+      const secondaryMatch = secondaryEntriesByKey.get(key)?.shift()
+      if (!secondaryMatch) continue
+
+      matchedEntries.add(secondaryMatch)
+      orderedEntries.push(secondaryMatch)
+    }
+
+    return [
+      ...orderedEntries,
+      ...primaryEntries.filter((entry) => !matchedEntries.has(entry)),
+      ...secondaryEntries.filter((entry) => !matchedEntries.has(entry))
+    ]
+  }
+
+  private _partitionFallbackStoredEntries(
+    linkedEntries: LinkedPromotionEntry[],
+    fallbackStoredEntries: PromotedWidgetSource[]
+  ): {
+    overlappingFallbackEntries: PromotedWidgetSource[]
+    reorderableFallbackEntries: PromotedWidgetSource[]
+  } {
+    if (linkedEntries.length === 0 || fallbackStoredEntries.length === 0) {
+      return {
+        overlappingFallbackEntries: [],
+        reorderableFallbackEntries: fallbackStoredEntries
+      }
+    }
+
+    const linkedWidgetNames = new Set(
+      linkedEntries.map((entry) => entry.sourceWidgetName)
+    )
+    const overlappingFallbackEntries: PromotedWidgetSource[] = []
+    const reorderableFallbackEntries: PromotedWidgetSource[] = []
+
+    for (const entry of fallbackStoredEntries) {
+      if (linkedWidgetNames.has(entry.sourceWidgetName)) {
+        overlappingFallbackEntries.push(entry)
+      } else {
+        reorderableFallbackEntries.push(entry)
+      }
+    }
+
+    return {
+      overlappingFallbackEntries,
+      reorderableFallbackEntries
+    }
+  }
+
   private _buildLinkedReconcileEntries(
     linkedEntries: LinkedPromotionEntry[]
-  ): Array<{
-    sourceNodeId: string
-    sourceWidgetName: string
-    viewKey: string
-    disambiguatingSourceNodeId?: string
-    slotName: string
-  }> {
+  ): ReconcileEntry[] {
     return linkedEntries.map(
       ({
         inputKey,

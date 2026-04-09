@@ -196,6 +196,7 @@ function setDraggableState() {
       oldPosition,
       newPosition
     )
+    node.setDirtyCanvas(true, true)
     canvasStore.canvas?.setDirty(true, true)
   }
 }
