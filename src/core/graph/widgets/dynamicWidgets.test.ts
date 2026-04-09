@@ -1,9 +1,12 @@
 import { setActivePinia } from 'pinia'
+import { fromAny } from '@total-typescript/shoehorn'
 import { createTestingPinia } from '@pinia/testing'
 import { describe, expect, test } from 'vitest'
+
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { HasInitialMinSize } from '@/services/litegraphService'
 
@@ -112,6 +115,40 @@ describe('Dynamic Combos', () => {
     expect.soft(node.widgets[1].tooltip).toBe('0')
     node.widgets[0].value = '1'
     expect.soft(node.widgets[1].tooltip).toBe('1')
+  })
+
+  test('Preserves manual height during configure restore', () => {
+    const node = testNode()
+    node.serialize_widgets = true
+    addDynamicCombo(node, [['INT'], ['INT', 'STRING']])
+
+    node.widgets[0].value = '1'
+    const height = node.computeSize([...node.size])[1] + 120
+    node.size = [node.size[0], height]
+
+    const serialized = node.serialize()
+    const restoredNode = testNode()
+    restoredNode.serialize_widgets = true
+    addDynamicCombo(restoredNode, [['INT'], ['INT', 'STRING']])
+
+    fromAny<{ configuringGraphLevel: number }, unknown>(
+      app
+    ).configuringGraphLevel = 1
+
+    try {
+      restoredNode.configure(serialized)
+    } finally {
+      fromAny<{ configuringGraphLevel: number }, unknown>(
+        app
+      ).configuringGraphLevel = 0
+    }
+
+    expect(restoredNode.inputs.map((input) => input.name)).toStrictEqual([
+      '0',
+      '0.0.0.0',
+      '0.0.0.1'
+    ])
+    expect(restoredNode.size[1]).toBe(height)
   })
 })
 describe('Autogrow', () => {

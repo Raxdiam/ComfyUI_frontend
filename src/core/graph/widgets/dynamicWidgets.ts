@@ -66,6 +66,13 @@ function ensureWidgetForInput(node: LGraphNode, input: INodeInputSlot) {
   input.widget = { name: input.name }
 }
 
+function syncNodeHeightToContent(node: LGraphNode) {
+  const contentHeight = node.computeSize([...node.size])[1]
+  node.size[1] = app.configuringGraph
+    ? Math.max(node.size[1], contentHeight)
+    : contentHeight
+}
+
 function dynamicComboWidget(
   node: LGraphNode,
   inputName: string,
@@ -176,7 +183,7 @@ function dynamicComboWidget(
       }
     }
 
-    node.size[1] = node.computeSize([...node.size])[1]
+    syncNodeHeightToContent(node)
     if (!node.graph) return
     node._setConcreteSlots()
     node.arrange()
@@ -524,7 +531,7 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
     for (const widget of remove(node.widgets, (w) => w.name === widgetName))
       widget.onRemove?.()
   }
-  node.size[1] = node.computeSize([...node.size])[1]
+  syncNodeHeightToContent(node)
 }
 
 function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
