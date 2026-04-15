@@ -4,11 +4,6 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Focus Mode', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.setup()
-  })
-
   test('Focus mode hides UI chrome', async ({ comfyPage }) => {
     await expect(comfyPage.menu.sideToolbar).toBeVisible()
 
