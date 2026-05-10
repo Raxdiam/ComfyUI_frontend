@@ -24,6 +24,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "batch_size": {
+        "name": "tamaño_de_lote"
+      },
+      "height": {
+        "name": "alto"
+      },
+      "length": {
+        "name": "longitud"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "start_image": {
+        "name": "imagen_inicial"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ancho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "AñadirRuido",
     "inputs": {
@@ -4171,6 +4205,54 @@
       }
     }
   },
+  "GeminiNanoBanana2V2": {
+    "description": "Genera o edita imágenes de forma síncrona a través de la API de Google Vertex.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Texto descriptivo de la imagen a generar o de las ediciones a aplicar. Incluye cualquier restricción, estilo o detalle que el modelo deba seguir."
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Cuando la semilla se fija a un valor específico, el modelo intenta proporcionar la misma respuesta en solicitudes repetidas. No se garantiza una salida determinista. Además, cambiar el modelo o los parámetros, como la temperatura, puede causar variaciones en la respuesta incluso usando la misma semilla. Por defecto, se utiliza una semilla aleatoria."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Instrucciones fundamentales que dictan el comportamiento de la IA."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "Primera imagen del proceso de pensamiento del modelo. Solo disponible con thinking_level ALTO y modalidad IMAGEN+TEXTO."
+      }
+    }
+  },
   "GeminiNode": {
     "description": "Genera respuestas de texto con el modelo de IA Gemini de Google. Puede proporcionar múltiples tipos de entradas (texto, imágenes, audio, video) como contexto para generar respuestas más relevantes y significativas.",
     "display_name": "Google Gemini",
@@ -7959,6 +8041,21 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "Cargar modelo de eliminación de fondo",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "nombre_del_modelo_de_eliminación_de_fondo",
+        "tooltip": "El modelo utilizado para eliminar fondos de imágenes"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "modelo_de_fondo",
         "tooltip": null
       }
     }
@@ -13409,6 +13506,25 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "RemoveBackground": {
+    "display_name": "Eliminar fondo",
+    "inputs": {
+      "bg_removal_model": {
+        "name": "modelo_de_eliminación_de_fondo",
+        "tooltip": "Modelo de eliminación de fondo utilizado para generar la máscara"
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Imagen de entrada para eliminar el fondo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "máscara",
+        "tooltip": "Máscara de primer plano generada"
       }
     }
   },

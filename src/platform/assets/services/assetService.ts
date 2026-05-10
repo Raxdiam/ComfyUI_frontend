@@ -184,25 +184,9 @@ export const MODELS_TAG = 'models'
 export const MISSING_TAG = 'missing'
 const DEFAULT_EXCLUDED_ASSET_TAGS = [MISSING_TAG]
 
-/** Result of a HEAD lookup against an exact asset hash. */
-export type AssetHashStatus = 'exists' | 'missing' | 'invalid'
-
-const BLAKE3_ASSET_HASH_PATTERN = /^blake3:[0-9a-f]{64}$/i
-const BLAKE3_HEX_PATTERN = /^[0-9a-f]{64}$/i
 const uploadedAssetResponseSchema = assetItemSchema.extend({
   created_new: z.boolean()
 })
-
-/** Returns true for a prefixed BLAKE3 asset hash: `blake3:<64 hex>`. */
-export function isBlake3AssetHash(value: string): boolean {
-  return BLAKE3_ASSET_HASH_PATTERN.test(value)
-}
-
-/** Converts a raw 64-character BLAKE3 hex digest into an asset hash. */
-export function toBlake3AssetHash(hash: string | undefined): string | null {
-  if (!hash || !BLAKE3_HEX_PATTERN.test(hash)) return null
-  return `blake3:${hash}`
-}
 
 function createAbortError(): DOMException {
   return new DOMException('Aborted', 'AbortError')
@@ -496,12 +480,27 @@ function createAssetService() {
     includePublic: boolean = true,
     { limit = DEFAULT_LIMIT, offset = 0, signal }: AssetPaginationOptions = {}
   ): Promise<AssetItem[]> {
-    const data = await handleAssetRequest(
+    const data = await getAssetsPageByTag(tag, includePublic, {
+      limit,
+      offset,
+      signal
+    })
+
+    return data.assets
+  }
+
+  /**
+   * Gets one paginated asset response filtered by a specific tag.
+   */
+  async function getAssetsPageByTag(
+    tag: string,
+    includePublic: boolean = true,
+    { limit = DEFAULT_LIMIT, offset = 0, signal }: AssetPaginationOptions = {}
+  ): Promise<AssetResponse> {
+    return await handleAssetRequest(
       { includeTags: [tag], limit, offset, includePublic, signal },
       `assets for tag ${tag}`
     )
-
-    return data.assets
   }
 
   /**
@@ -527,16 +526,11 @@ function createAssetService() {
     while (true) {
       if (signal?.aborted) throw createAbortError()
 
-      const data = await handleAssetRequest(
-        {
-          includeTags: [tag],
-          limit: pageSize,
-          offset,
-          includePublic,
-          signal
-        },
-        `assets for tag ${tag}`
-      )
+      const data = await getAssetsPageByTag(tag, includePublic, {
+        limit: pageSize,
+        offset,
+        signal
+      })
       const batch = data.assets
       if (batch.length === 0) {
         return assets
@@ -589,31 +583,6 @@ function createAssetService() {
       pendingInputAssetsIncludingPublic ??
       startInputAssetsIncludingPublicRequest()
     return await withCallerAbort(request, signal)
-  }
-
-  /**
-   * Checks whether an asset exists for an exact asset hash.
-   *
-   * Uses the HEAD /assets/hash/{hash} endpoint and maps status-only responses:
-   * 200 -> exists, 404 -> missing, and 400 -> invalid hash format.
-   */
-  async function checkAssetHash(
-    assetHash: string,
-    signal?: AbortSignal
-  ): Promise<AssetHashStatus> {
-    const response = await api.fetchApi(
-      `${ASSETS_ENDPOINT}/hash/${encodeURIComponent(assetHash)}`,
-      {
-        method: 'HEAD',
-        signal
-      }
-    )
-
-    if (response.status === 200) return 'exists'
-    if (response.status === 404) return 'missing'
-    if (response.status === 400) return 'invalid'
-
-    throw new Error(`Unexpected asset hash check status: ${response.status}`)
   }
 
   /**
@@ -976,10 +945,10 @@ function createAssetService() {
     getAssetsForNodeType,
     getAssetDetails,
     getAssetsByTag,
+    getAssetsPageByTag,
     getAllAssetsByTag,
     getInputAssetsIncludingPublic,
     invalidateInputAssetsIncludingPublic,
-    checkAssetHash,
     deleteAsset,
     updateAsset,
     addAssetTags,

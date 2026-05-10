@@ -24,6 +24,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "batch_size": {
+        "name": "taille_du_lot"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "length": {
+        "name": "longueur"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "start_image": {
+        "name": "image_de_départ"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "AjouterBruit",
     "inputs": {
@@ -4171,6 +4205,54 @@
       }
     }
   },
+  "GeminiNanoBanana2V2": {
+    "description": "Générez ou modifiez des images de manière synchrone via l'API Google Vertex.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_aspect_ratio": {
+        "name": "rapport d'aspect"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_thinking_level": {
+        "name": "niveau de réflexion"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Invite textuelle décrivant l'image à générer ou les modifications à appliquer. Incluez toutes contraintes, styles ou détails que le modèle doit respecter."
+      },
+      "response_modalities": {
+        "name": "modalités de réponse"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Lorsque la graine est fixée à une valeur spécifique, le modèle s'efforce de fournir la même réponse pour des requêtes répétées. Un résultat déterministe n'est pas garanti. De plus, changer le modèle ou les paramètres, comme la température, peut entraîner des variations de la réponse même avec la même valeur de graine. Par défaut, une valeur de graine aléatoire est utilisée."
+      },
+      "system_prompt": {
+        "name": "invite système",
+        "tooltip": "Instructions fondamentales qui dictent le comportement de l'IA."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "image de réflexion",
+        "tooltip": "Première image issue du processus de réflexion du modèle. Disponible uniquement avec le niveau de réflexion ÉLEVÉ et la modalité IMAGE+TEXTE."
+      }
+    }
+  },
   "GeminiNode": {
     "description": "Génère des réponses textuelles avec le modèle d'IA Gemini de Google. Vous pouvez fournir plusieurs types d'entrées (texte, images, audio, vidéo) comme contexte pour générer des réponses plus pertinentes et significatives.",
     "display_name": "Google Gemini",
@@ -7959,6 +8041,21 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "Charger le modèle de suppression d’arrière-plan",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "nom_du_modèle_de_suppression_arrière-plan",
+        "tooltip": "Le modèle utilisé pour supprimer les arrière-plans des images"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "modèle_bg",
         "tooltip": null
       }
     }
@@ -13409,6 +13506,25 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "RemoveBackground": {
+    "display_name": "Supprimer l’arrière-plan",
+    "inputs": {
+      "bg_removal_model": {
+        "name": "modèle_de_suppression_arrière-plan",
+        "tooltip": "Modèle de suppression d’arrière-plan utilisé pour générer le masque"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Image d’entrée dont l’arrière-plan doit être supprimé"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masque",
+        "tooltip": "Masque de premier plan généré"
       }
     }
   },
